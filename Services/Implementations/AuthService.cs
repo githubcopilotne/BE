@@ -57,8 +57,12 @@ namespace BE.Services.Implementations
 
                 // 3. Check cooldown (chống spam)
                 var cooldownKey = $"cooldown_{request.Email}";
-                if (_cache.TryGetValue(cooldownKey, out _))
-                    return ApiResponse<object>.ErrorResponse("Vui lòng chờ 60 giây trước khi gửi lại mã OTP");
+                if (_cache.TryGetValue(cooldownKey, out DateTime cooldownStart))
+                {
+                    var remaining = 60 - (int)(DateTime.Now - cooldownStart).TotalSeconds;
+                    if (remaining > 0)
+                        return ApiResponse<object>.ErrorResponse($"Vui lòng chờ {remaining} giây trước khi gửi lại mã OTP");
+                }
 
                 // 4. Tạo mã OTP 6 số
                 var otpCode = new Random().Next(100000, 999999).ToString();
@@ -73,7 +77,7 @@ namespace BE.Services.Implementations
                 _cache.Set(cacheKey, cacheData, TimeSpan.FromMinutes(5));
 
                 // 6. Lưu cooldown (60 giây)
-                _cache.Set(cooldownKey, true, TimeSpan.FromSeconds(60));
+                _cache.Set(cooldownKey, DateTime.Now, TimeSpan.FromSeconds(60));
 
                 // 7. Gửi OTP tới email
                 await _emailService.SendOtpEmail(request.Email, otpCode);
