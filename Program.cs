@@ -13,12 +13,18 @@ builder.Services.AddDbContext<ShopQuanAoContext>(options =>
 );
 
 // =============================================
-// 2. DI — đăng ký Service
+// 2. DI — đăng ký Services
 // =============================================
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // =============================================
-// 3. CORS — cho phép FE gọi API
+// 3. Memory Cache — lưu OTP tạm thời
+// =============================================
+builder.Services.AddMemoryCache();
+
+// =============================================
+// 4. CORS — cho phép FE gọi API
 // =============================================
 builder.Services.AddCors(options =>
 {

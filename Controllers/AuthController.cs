@@ -15,10 +15,22 @@ namespace BE.Controllers
             _authService = authService;
         }
 
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterRequest request)
+        [HttpPost("send-otp")]
+        public async Task<IActionResult> SendOtp(RegisterRequest request)
         {
-            var result = await _authService.Register(request);
+            var result = await _authService.SendOtp(request);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
+
+        [HttpPost("verify-otp")]
+        public async Task<IActionResult> VerifyOtp(VerifyOtpRequest request)
+        {
+            var result = await _authService.VerifyOtp(request);
+
             if (result.Success)
                 return Ok(result);
 
