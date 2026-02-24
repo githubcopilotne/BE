@@ -20,7 +20,7 @@ namespace BE.Services.Implementations
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(
                 emailSettings["SenderName"],
-                emailSettings["SenderEmail"]
+                emailSettings["SenderEmail"]!
             ));
             message.To.Add(new MailboxAddress("", toEmail));
             message.Subject = "Mã xác thực đăng ký - Shop Quần Áo";
