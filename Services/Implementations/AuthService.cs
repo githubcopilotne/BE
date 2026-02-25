@@ -1,8 +1,13 @@
 using System.Text.RegularExpressions;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using BE.DTOs;
 using BE.Models;
 using BE.Services.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace BE.Services.Implementations
 {
@@ -11,14 +16,17 @@ namespace BE.Services.Implementations
         private readonly ShopQuanAoContext _context;
         private readonly IMemoryCache _cache;
         private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public AuthService(ShopQuanAoContext context, IMemoryCache cache, IEmailService emailService)
+        public AuthService(ShopQuanAoContext context, IMemoryCache cache, IEmailService emailService, IConfiguration configuration)
         {
             _context = context;
             _cache = cache;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
+        // ==================== SEND OTP ====================
         public async Task<ApiResponse<object>> SendOtp(RegisterRequest request)
         {
             try
@@ -51,7 +59,7 @@ namespace BE.Services.Implementations
                     return ApiResponse<object>.ErrorResponse("Số điện thoại không hợp lệ (phải bắt đầu bằng 0, đủ 10 số)");
 
                 // 2. Check email đã tồn tại chưa
-                var existingUser = _context.Users.FirstOrDefault(u => u.Email == request.Email);
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
                 if (existingUser != null)
                     return ApiResponse<object>.ErrorResponse("Email đã được sử dụng");
 
@@ -93,6 +101,7 @@ namespace BE.Services.Implementations
             }
         }
 
+        // ==================== VERIFY OTP ====================
         public async Task<ApiResponse<object>> VerifyOtp(VerifyOtpRequest request)
         {
             try
@@ -153,6 +162,80 @@ namespace BE.Services.Implementations
             {
                 return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
             }
+        }
+
+        // ==================== LOGIN ====================
+        public async Task<ApiResponse<object>> Login(LoginRequest request)
+        {
+            try
+            {
+                // 1. Trim + lowercase
+                request.Email = request.Email.Trim().ToLower();
+
+                // 2. Validate
+                if (string.IsNullOrWhiteSpace(request.Email))
+                    return ApiResponse<object>.ErrorResponse("Email không được để trống");
+
+                if (string.IsNullOrWhiteSpace(request.Password))
+                    return ApiResponse<object>.ErrorResponse("Mật khẩu không được để trống");
+
+                // 3. Tìm user theo email
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+                if (user == null)
+                    return ApiResponse<object>.ErrorResponse("Email không tồn tại");
+
+                // 4. Check password
+                if (user.Password == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.Password))
+                    return ApiResponse<object>.ErrorResponse("Mật khẩu không đúng");
+
+                // 5. Check tài khoản bị khóa
+                if (user.Status == 0)
+                    return ApiResponse<object>.ErrorResponse("Tài khoản đã bị khóa");
+
+                // 6. Tạo JWT token
+                var token = GenerateJwtToken(user);
+
+                return ApiResponse<object>.SuccessResponse(new
+                {
+                    Token = token,
+                    User = new
+                    {
+                        user.UserId,
+                        user.Email,
+                        user.FullName,
+                        user.Role
+                    }
+                }, "Đăng nhập thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
+
+        // ==================== HELPER ====================
+        private string GenerateJwtToken(User user)
+        {
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var secretKey = jwtSettings["SecretKey"]!;
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: jwtSettings["Issuer"],
+                audience: jwtSettings["Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddHours(double.Parse(jwtSettings["ExpirationInHours"]!)),
+                signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

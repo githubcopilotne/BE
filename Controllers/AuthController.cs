@@ -36,5 +36,16 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPost("login")]
+        public async Task<IActionResult> Login(LoginRequest request)
+        {
+            var result = await _authService.Login(request);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }
