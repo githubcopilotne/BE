@@ -47,5 +47,16 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPost("google-login")]
+        public async Task<IActionResult> GoogleLogin(GoogleLoginRequest request)
+        {
+            var result = await _authService.GoogleLogin(request);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }

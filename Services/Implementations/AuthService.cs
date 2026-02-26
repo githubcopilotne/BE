@@ -5,6 +5,7 @@ using System.Text;
 using BE.DTOs;
 using BE.Models;
 using BE.Services.Interfaces;
+using Google.Apis.Auth;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -193,6 +194,98 @@ namespace BE.Services.Implementations
                     return ApiResponse<object>.ErrorResponse("Tài khoản đã bị khóa");
 
                 // 6. Tạo JWT token
+                var token = GenerateJwtToken(user);
+
+                return ApiResponse<object>.SuccessResponse(new
+                {
+                    Token = token,
+                    User = new
+                    {
+                        user.UserId,
+                        user.Email,
+                        user.FullName,
+                        user.Role
+                    }
+                }, "Đăng nhập thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
+
+        // ==================== GOOGLE LOGIN ====================
+        public async Task<ApiResponse<object>> GoogleLogin(GoogleLoginRequest request)
+        {
+            try
+            {
+                // 1. Validate
+                if (string.IsNullOrWhiteSpace(request.Credential))
+                    return ApiResponse<object>.ErrorResponse("Credential không được để trống");
+
+                // 2. Verify Google ID Token
+                var settings = new GoogleJsonWebSignature.ValidationSettings
+                {
+                    Audience = new[] { _configuration["GoogleSettings:ClientId"] }
+                };
+
+                GoogleJsonWebSignature.Payload payload;
+                try
+                {
+                    payload = await GoogleJsonWebSignature.ValidateAsync(request.Credential, settings);
+                }
+                catch 
+                {
+                    return ApiResponse<object>.ErrorResponse("Google credential không hợp lệ");
+                }
+
+                // 3. Lấy thông tin từ payload
+                var googleId = payload.Subject;
+                var email = payload.Email?.Trim().ToLower();
+                var fullName = payload.Name ?? "Google User";
+
+                if (string.IsNullOrWhiteSpace(email))
+                    return ApiResponse<object>.ErrorResponse("Không lấy được email từ tài khoản Google");
+
+                // 4. Tìm user theo GoogleId
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.GoogleId == googleId);
+
+                // 5. Không tìm thấy theo GoogleId → tìm theo Email (auto-link)
+                if (user == null)
+                {
+                    user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+
+                    if (user != null)
+                    {
+                        // Auto-link: cập nhật GoogleId vào tài khoản đã có
+                        user.GoogleId = googleId;
+                        await _context.SaveChangesAsync();
+                    }
+                }
+
+                // 6. Không tìm thấy → tạo user mới
+                if (user == null)
+                {
+                    user = new User
+                    {
+                        GoogleId = googleId,
+                        Email = email,
+                        FullName = fullName,
+                        Password = null,
+                        Role = "customer",
+                        Status = 1,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    _context.Users.Add(user);
+                    await _context.SaveChangesAsync();
+                }
+
+                // 7. Check tài khoản bị khóa
+                if (user.Status == 0)
+                    return ApiResponse<object>.ErrorResponse("Tài khoản đã bị khóa");
+
+                // 8. Tạo JWT token
                 var token = GenerateJwtToken(user);
 
                 return ApiResponse<object>.SuccessResponse(new
