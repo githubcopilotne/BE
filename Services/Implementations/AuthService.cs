@@ -306,6 +306,146 @@ namespace BE.Services.Implementations
             }
         }
 
+        // ==================== FORGOT PASSWORD — SEND OTP ====================
+        public async Task<ApiResponse<object>> ForgotPasswordSendOtp(ForgotPasswordRequest request)
+        {
+            try
+            {
+                // 1. Trim + lowercase
+                request.Email = request.Email.Trim().ToLower();
+
+                // 2. Validate
+                if (string.IsNullOrWhiteSpace(request.Email)) 
+                    return ApiResponse<object>.ErrorResponse("Email không được để trống");
+
+                if (!Regex.IsMatch(request.Email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                    return ApiResponse<object>.ErrorResponse("Email không đúng định dạng");
+
+                // 3. Check email tồn tại
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+                if (user == null)
+                    return ApiResponse<object>.ErrorResponse("Email không tồn tại");
+
+                // 4. Check cooldown (chống spam)
+                var cooldownKey = $"forgot_cooldown_{request.Email}";
+                if (_cache.TryGetValue(cooldownKey, out DateTime cooldownStart))
+                {
+                    var remaining = 60 - (int)(DateTime.Now - cooldownStart).TotalSeconds;
+                    if (remaining > 0)
+                        return ApiResponse<object>.ErrorResponse($"Vui lòng chờ {remaining} giây trước khi gửi lại mã OTP");
+                }
+
+                // 5. Tạo mã OTP 6 số
+                var otpCode = new Random().Next(100000, 999999).ToString();
+
+                // 6. Lưu OTP vào cache (5 phút)
+                var cacheKey = $"forgot_otp_{request.Email}";
+                _cache.Set(cacheKey, otpCode, TimeSpan.FromMinutes(5));
+
+                // 7. Lưu cooldown (60 giây)
+                _cache.Set(cooldownKey, DateTime.Now, TimeSpan.FromSeconds(60));
+
+                // 8. Gửi OTP tới email
+                await _emailService.SendOtpEmail(request.Email, otpCode);
+
+                return ApiResponse<object>.SuccessResponse(new
+                {
+                    request.Email
+                }, "Mã xác thực đã được gửi đến email của bạn");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
+
+        // ==================== FORGOT PASSWORD — VERIFY OTP ====================
+        public async Task<ApiResponse<object>> ForgotPasswordVerifyOtp(VerifyOtpRequest request)
+        {
+            try
+            {
+                await Task.CompletedTask;
+                // 1. Trim + lowercase
+                request.Email = request.Email.Trim().ToLower();
+                request.OtpCode = request.OtpCode.Trim();
+
+                // 2. Validate
+                if (string.IsNullOrWhiteSpace(request.Email))
+                    return ApiResponse<object>.ErrorResponse("Email không được để trống");
+
+                if (string.IsNullOrWhiteSpace(request.OtpCode))
+                    return ApiResponse<object>.ErrorResponse("Mã OTP không được để trống");
+
+                // 3. Lấy OTP từ cache
+                var otpKey = $"forgot_otp_{request.Email}";
+                if (!_cache.TryGetValue(otpKey, out string? cachedOtp) || cachedOtp == null)
+                    return ApiResponse<object>.ErrorResponse("Mã OTP đã hết hạn hoặc không tồn tại");
+
+                // 4. Check OTP có đúng không
+                if (cachedOtp != request.OtpCode)
+                    return ApiResponse<object>.ErrorResponse("Mã OTP không đúng");
+
+                // 5. Xóa OTP khỏi cache (đã dùng xong)
+                _cache.Remove(otpKey);
+
+                // 6. Tạo reset token + lưu cache (5 phút)
+                var resetToken = Guid.NewGuid().ToString();
+                _cache.Set($"reset_token_{resetToken}", request.Email, TimeSpan.FromMinutes(5));
+
+                return ApiResponse<object>.SuccessResponse(new
+                {
+                    ResetToken = resetToken
+                }, "Xác thực OTP thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
+
+        // ==================== FORGOT PASSWORD — RESET PASSWORD ====================
+        public async Task<ApiResponse<object>> ResetPassword(ResetPasswordRequest request)
+        {
+            try
+            {
+                // 1. Validate
+                if (string.IsNullOrWhiteSpace(request.ResetToken))
+                    return ApiResponse<object>.ErrorResponse("Reset token không được để trống");
+
+                if (string.IsNullOrWhiteSpace(request.NewPassword))
+                    return ApiResponse<object>.ErrorResponse("Mật khẩu mới không được để trống");
+
+                if (request.NewPassword.Length < 6)
+                    return ApiResponse<object>.ErrorResponse("Mật khẩu phải có ít nhất 6 ký tự");
+
+                // 2. Lấy email từ reset token trong cache
+                var tokenKey = $"reset_token_{request.ResetToken}";
+                if (!_cache.TryGetValue(tokenKey, out string? email) || email == null)
+                    return ApiResponse<object>.ErrorResponse("Reset token không hợp lệ hoặc đã hết hạn");
+
+                // 3. Tìm user theo email
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+                if (user == null)
+                    return ApiResponse<object>.ErrorResponse("Email không tồn tại");
+
+                // 4. Hash password mới + cập nhật
+                user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+                await _context.SaveChangesAsync();
+
+                // 5. Xóa reset token khỏi cache (đã dùng xong)
+                _cache.Remove(tokenKey);
+
+                return ApiResponse<object>.SuccessResponse(new
+                {
+                    user.Email
+                }, "Đặt lại mật khẩu thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
+
         // ==================== HELPER ====================
         private string GenerateJwtToken(User user)
         {

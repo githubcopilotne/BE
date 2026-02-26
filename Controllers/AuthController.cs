@@ -58,5 +58,38 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPost("forgot-password/send-otp")]
+        public async Task<IActionResult> ForgotPasswordSendOtp(ForgotPasswordRequest request)
+        {
+            var result = await _authService.ForgotPasswordSendOtp(request);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
+
+        [HttpPost("forgot-password/verify-otp")]
+        public async Task<IActionResult> ForgotPasswordVerifyOtp(VerifyOtpRequest request)
+        {
+            var result = await _authService.ForgotPasswordVerifyOtp(request);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
+
+        [HttpPost("forgot-password/reset-password")]
+        public async Task<IActionResult> ResetPassword(ResetPasswordRequest request)
+        {
+            var result = await _authService.ResetPassword(request);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }
