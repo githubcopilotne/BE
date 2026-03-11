@@ -139,7 +139,7 @@ namespace BE.Services.Implementations
                     Password = hashedPassword,
                     FullName = registerData.FullName,
                     Phone = registerData.Phone,
-                    Role = "customer",
+                    Role = "Customer",
                     Status = 1,
                     CreatedAt = DateTime.Now
                 };
@@ -272,7 +272,7 @@ namespace BE.Services.Implementations
                         Email = email,
                         FullName = fullName,
                         Password = null,
-                        Role = "customer",
+                        Role = "Customer",
                         Status = 1,
                         CreatedAt = DateTime.Now
                     };
