@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace BE.Models;
@@ -28,6 +28,8 @@ public partial class User
     public DateOnly? Birthday { get; set; }
 
     public string? Address { get; set; }
+
+    public string? EmployeeCode { get; set; }
 
     public string? IdCard { get; set; }
 
