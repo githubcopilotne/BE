@@ -321,5 +321,45 @@ namespace BE.Services.Implementations
                 return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
             }
         }
+
+        // ==================== TOGGLE STATUS ====================
+        public async Task<ApiResponse<object>> ToggleStatus(int id)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.UserId == id && u.Role != "Customer");
+
+                if (user == null)
+                    return ApiResponse<object>.ErrorResponse("Không tìm thấy nhân viên");
+
+                if (user.Status == 1)
+                {
+                    // Khóa tài khoản
+                    user.Status = 0;
+                    user.LeaveDate = DateOnly.FromDateTime(DateTime.Now);
+                }
+                else
+                {
+                    // Mở khóa tài khoản
+                    user.Status = 1;
+                    user.LeaveDate = null;
+                }
+
+                await _context.SaveChangesAsync();
+
+                var statusText = user.Status == 1 ? "mở khóa" : "khóa";
+                return ApiResponse<object>.SuccessResponse(new
+                {
+                    user.UserId,
+                    user.Status,
+                    user.LeaveDate
+                }, $"Đã {statusText} tài khoản nhân viên");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
     }
 }

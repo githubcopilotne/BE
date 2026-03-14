@@ -9,5 +9,6 @@ namespace BE.Services.Interfaces
         Task<ApiResponse<object>> GetById(int id);
         Task<ApiResponse<object>> Create(CreateStaffRequest request);
         Task<ApiResponse<object>> Update(int id, UpdateStaffRequest request);
+        Task<ApiResponse<object>> ToggleStatus(int id);
     }
 }

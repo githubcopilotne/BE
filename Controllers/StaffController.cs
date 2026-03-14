@@ -65,5 +65,16 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> ToggleStatus(int id)
+        {
+            var result = await _staffService.ToggleStatus(id);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }
