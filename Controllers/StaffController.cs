@@ -1,3 +1,4 @@
+using BE.DTOs.Staff;
 using BE.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -36,6 +37,17 @@ namespace BE.Controllers
         public async Task<IActionResult> GetById(int id)
         {
             var result = await _staffService.GetById(id);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateStaffRequest request)
+        {
+            var result = await _staffService.Create(request);
 
             if (result.Success)
                 return Ok(result);
