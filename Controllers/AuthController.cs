@@ -1,4 +1,4 @@
-﻿using BE.DTOs;
+using BE.DTOs.Auth;
 using BE.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 

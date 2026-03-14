@@ -1,4 +1,5 @@
 using BE.DTOs;
+using BE.DTOs.Auth;
 
 namespace BE.Services.Interfaces
 {

@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using BE.DTOs;
+using BE.DTOs.Auth;
 using BE.Models;
 using BE.Services.Interfaces;
 using Google.Apis.Auth;

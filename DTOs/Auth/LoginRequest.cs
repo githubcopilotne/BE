@@ -1,4 +1,4 @@
-namespace BE.DTOs
+namespace BE.DTOs.Auth
 {
     public class LoginRequest
     {
