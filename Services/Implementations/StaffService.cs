@@ -85,5 +85,42 @@ namespace BE.Services.Implementations
                 return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
             }
         }
+
+        // ==================== GET BY ID ====================
+        public async Task<ApiResponse<object>> GetById(int id)
+        {
+            try
+            {
+                var staff = await _context.Users
+                    .Where(u => u.UserId == id && u.Role != "Customer")
+                    .Select(u => new StaffDetail
+                    {
+                        UserId = u.UserId,
+                        EmployeeCode = u.EmployeeCode,
+                        FullName = u.FullName,
+                        Email = u.Email,
+                        Phone = u.Phone,
+                        Gender = u.Gender,
+                        Birthday = u.Birthday,
+                        Address = u.Address,
+                        Role = u.Role,
+                        IdCard = u.IdCard,
+                        HireDate = u.HireDate,
+                        LeaveDate = u.LeaveDate,
+                        Status = u.Status,
+                        CreatedAt = u.CreatedAt
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (staff == null)
+                    return ApiResponse<object>.ErrorResponse("Không tìm thấy nhân viên");
+
+                return ApiResponse<object>.SuccessResponse(staff, "Lấy thông tin nhân viên thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
     }
 }

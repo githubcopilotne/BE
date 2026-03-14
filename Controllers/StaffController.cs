@@ -31,5 +31,16 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var result = await _staffService.GetById(id);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }
