@@ -54,5 +54,16 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(int id, UpdateStaffRequest request)
+        {
+            var result = await _staffService.Update(id, request);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }

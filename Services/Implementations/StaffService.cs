@@ -242,5 +242,84 @@ namespace BE.Services.Implementations
                 return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
             }
         }
+
+        // ==================== UPDATE ====================
+        public async Task<ApiResponse<object>> Update(int id, UpdateStaffRequest request)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.UserId == id && u.Role != "Customer");
+
+                if (user == null)
+                    return ApiResponse<object>.ErrorResponse("Không tìm thấy nhân viên");
+
+                // Trim input
+                request.FullName = request.FullName.Trim();
+                request.Phone = request.Phone.Trim();
+                request.Address = request.Address.Trim();
+                request.IdCard = request.IdCard.Trim();
+
+                // 1. Validate fullName
+                if (string.IsNullOrWhiteSpace(request.FullName))
+                    return ApiResponse<object>.ErrorResponse("Họ tên không được để trống");
+
+                // 2. Validate phone
+                if (string.IsNullOrWhiteSpace(request.Phone))
+                    return ApiResponse<object>.ErrorResponse("Số điện thoại không được để trống");
+
+                if (!Regex.IsMatch(request.Phone, @"^0\d{9}$"))
+                    return ApiResponse<object>.ErrorResponse("Số điện thoại không hợp lệ (bắt đầu bằng 0, đủ 10 số)");
+
+                // 3. Validate gender
+                if (request.Gender != 0 && request.Gender != 1)
+                    return ApiResponse<object>.ErrorResponse("Giới tính không hợp lệ (0: Nữ, 1: Nam)");
+
+                // 4. Validate birthday
+                if (request.Birthday >= DateOnly.FromDateTime(DateTime.Now))
+                    return ApiResponse<object>.ErrorResponse("Ngày sinh phải nhỏ hơn ngày hiện tại");
+
+                // 5. Validate address
+                if (string.IsNullOrWhiteSpace(request.Address))
+                    return ApiResponse<object>.ErrorResponse("Địa chỉ không được để trống");
+
+                // 6. Validate role
+                if (request.Role != "Admin" && request.Role != "Staff")
+                    return ApiResponse<object>.ErrorResponse("Role phải là Admin hoặc Staff");
+
+                // 7. Validate idCard (CCCD 12 số)
+                if (!Regex.IsMatch(request.IdCard, @"^\d{12}$"))
+                    return ApiResponse<object>.ErrorResponse("CCCD phải đúng 12 chữ số");
+
+                // 8. Validate hireDate
+                if (request.HireDate > DateOnly.FromDateTime(DateTime.Now))
+                    return ApiResponse<object>.ErrorResponse("Ngày vào làm không được lớn hơn ngày hiện tại");
+
+                // Cập nhật thông tin
+                user.FullName = request.FullName;
+                user.Phone = request.Phone;
+                user.Gender = request.Gender;
+                user.Birthday = request.Birthday;
+                user.Address = request.Address;
+                user.Role = request.Role;
+                user.IdCard = request.IdCard;
+                user.HireDate = request.HireDate;
+
+                await _context.SaveChangesAsync();
+
+                return ApiResponse<object>.SuccessResponse(new
+                {
+                    user.UserId,
+                    user.EmployeeCode,
+                    user.FullName,
+                    user.Email,
+                    user.Role
+                }, "Cập nhật nhân viên thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
     }
 }
