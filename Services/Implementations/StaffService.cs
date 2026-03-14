@@ -361,5 +361,37 @@ namespace BE.Services.Implementations
                 return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
             }
         }
+
+        // ==================== RESET PASSWORD ====================
+        public async Task<ApiResponse<object>> ResetPassword(int id)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .FirstOrDefaultAsync(u => u.UserId == id && u.Role != "Customer");
+
+                if (user == null)
+                    return ApiResponse<object>.ErrorResponse("Không tìm thấy nhân viên");
+
+                // Gen password ngẫu nhiên 6 ký tự (chữ + số + ký tự đặc biệt)
+                const string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$!";
+                var random = new Random();
+                var newPassword = new string(Enumerable.Range(0, 6)
+                    .Select(_ => chars[random.Next(chars.Length)])
+                    .ToArray());
+
+                user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                await _context.SaveChangesAsync();
+
+                return ApiResponse<object>.SuccessResponse(new
+                {
+                    newPassword
+                }, "Đã reset mật khẩu nhân viên");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
     }
 }

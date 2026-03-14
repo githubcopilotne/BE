@@ -76,5 +76,16 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPatch("{id}/reset-password")]
+        public async Task<IActionResult> ResetPassword(int id)
+        {
+            var result = await _staffService.ResetPassword(id);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }
