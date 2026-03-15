@@ -115,5 +115,46 @@ namespace BE.Services.Implementations
                 return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
             }
         }
+        // ==================== CHANGE PASSWORD ====================
+        public async Task<ApiResponse<object>> ChangePassword(int userId, ChangePasswordRequest request)
+        {
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.UserId == userId);
+                if (user == null)
+                    return ApiResponse<object>.ErrorResponse("Không tìm thấy tài khoản");
+
+                // 1. Validate currentPassword
+                if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+                    return ApiResponse<object>.ErrorResponse("Mật khẩu hiện tại không được để trống");
+
+                if (user.Password == null || !BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.Password))
+                    return ApiResponse<object>.ErrorResponse("Mật khẩu hiện tại không đúng");
+
+                // 2. Validate newPassword
+                if (string.IsNullOrWhiteSpace(request.NewPassword))
+                    return ApiResponse<object>.ErrorResponse("Mật khẩu mới không được để trống");
+
+                if (request.NewPassword.Length < 6)
+                    return ApiResponse<object>.ErrorResponse("Mật khẩu mới phải có ít nhất 6 ký tự");
+
+                // 3. Validate confirmPassword
+                if (request.NewPassword != request.ConfirmPassword)
+                    return ApiResponse<object>.ErrorResponse("Xác nhận mật khẩu không khớp");
+
+                // 4. Mật khẩu mới phải khác mật khẩu cũ
+                if (BCrypt.Net.BCrypt.Verify(request.NewPassword, user.Password))
+                    return ApiResponse<object>.ErrorResponse("Mật khẩu mới phải khác mật khẩu hiện tại");
+
+                user.Password = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+                await _context.SaveChangesAsync();
+
+                return ApiResponse<object>.SuccessResponse(null!, "Đổi mật khẩu thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
     }
 }

@@ -7,5 +7,6 @@ namespace BE.Services.Interfaces
     {
         Task<ApiResponse<object>> GetProfile(int userId);
         Task<ApiResponse<object>> UpdateProfile(int userId, UpdateProfileRequest request);
+        Task<ApiResponse<object>> ChangePassword(int userId, ChangePasswordRequest request);
     }
 }
