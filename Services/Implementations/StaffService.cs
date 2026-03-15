@@ -165,6 +165,10 @@ namespace BE.Services.Implementations
                 if (!Regex.IsMatch(request.Phone, @"^0\d{9}$"))
                     return ApiResponse<object>.ErrorResponse("Số điện thoại không hợp lệ (bắt đầu bằng 0, đủ 10 số)");
 
+                var phoneExists = await _context.Users.AnyAsync(u => u.Phone == request.Phone && u.Role != "Customer");
+                if (phoneExists)
+                    return ApiResponse<object>.ErrorResponse("Số điện thoại đã được sử dụng");
+
                 // 5. Validate gender
                 if (request.Gender != 0 && request.Gender != 1)
                     return ApiResponse<object>.ErrorResponse("Giới tính không hợp lệ (0: Nữ, 1: Nam)");
@@ -184,6 +188,10 @@ namespace BE.Services.Implementations
                 // 9. Validate idCard (CCCD 12 số)
                 if (!Regex.IsMatch(request.IdCard, @"^\d{12}$"))
                     return ApiResponse<object>.ErrorResponse("CCCD phải đúng 12 chữ số");
+
+                var idCardExists = await _context.Users.AnyAsync(u => u.IdCard == request.IdCard);
+                if (idCardExists)
+                    return ApiResponse<object>.ErrorResponse("CCCD đã được sử dụng");
 
                 // 10. Validate hireDate
                 if (request.HireDate > DateOnly.FromDateTime(DateTime.Now))
@@ -271,6 +279,10 @@ namespace BE.Services.Implementations
                 if (!Regex.IsMatch(request.Phone, @"^0\d{9}$"))
                     return ApiResponse<object>.ErrorResponse("Số điện thoại không hợp lệ (bắt đầu bằng 0, đủ 10 số)");
 
+                var phoneExists = await _context.Users.AnyAsync(u => u.Phone == request.Phone && u.Role != "Customer" && u.UserId != id);
+                if (phoneExists)
+                    return ApiResponse<object>.ErrorResponse("Số điện thoại đã được sử dụng");
+
                 // 3. Validate gender
                 if (request.Gender != 0 && request.Gender != 1)
                     return ApiResponse<object>.ErrorResponse("Giới tính không hợp lệ (0: Nữ, 1: Nam)");
@@ -290,6 +302,10 @@ namespace BE.Services.Implementations
                 // 7. Validate idCard (CCCD 12 số)
                 if (!Regex.IsMatch(request.IdCard, @"^\d{12}$"))
                     return ApiResponse<object>.ErrorResponse("CCCD phải đúng 12 chữ số");
+
+                var idCardExists = await _context.Users.AnyAsync(u => u.IdCard == request.IdCard && u.UserId != id);
+                if (idCardExists)
+                    return ApiResponse<object>.ErrorResponse("CCCD đã được sử dụng");
 
                 // 8. Validate hireDate
                 if (request.HireDate > DateOnly.FromDateTime(DateTime.Now))
