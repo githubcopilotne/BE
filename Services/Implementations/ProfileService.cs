@@ -97,7 +97,18 @@ namespace BE.Services.Implementations
 
                 await _context.SaveChangesAsync();
 
-                return ApiResponse<object>.SuccessResponse(null, "Cập nhật thông tin thành công");
+                return ApiResponse<object>.SuccessResponse(new ProfileInfo
+                {
+                    Email = user.Email,
+                    FullName = user.FullName,
+                    Phone = user.Phone,
+                    Gender = user.Gender,
+                    Birthday = user.Birthday,
+                    Address = user.Address,
+                    Role = user.Role,
+                    EmployeeCode = user.EmployeeCode,
+                    HireDate = user.HireDate
+                }, "Cập nhật thông tin thành công");
             }
             catch (Exception ex)
             {
