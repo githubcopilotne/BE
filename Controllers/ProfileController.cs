@@ -1,3 +1,4 @@
+using BE.DTOs.Profile;
 using BE.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +23,18 @@ namespace BE.Controllers
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             var result = await _profileService.GetProfile(userId);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> UpdateProfile(UpdateProfileRequest request)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await _profileService.UpdateProfile(userId, request);
 
             if (result.Success)
                 return Ok(result);
