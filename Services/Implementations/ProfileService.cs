@@ -74,7 +74,7 @@ namespace BE.Services.Implementations
                     if (user.Role != "Customer")
                     {
                         var phoneExists = await _context.Users.AnyAsync(u =>
-                            u.Phone == request.Phone && u.Role != "Customer" && u.UserId != userId);
+                            u.Phone == request.Phone && u.Role != "Customer" && u.Status == 1 && u.UserId != userId);
                         if (phoneExists)
                             return ApiResponse<object>.ErrorResponse("Số điện thoại đã được sử dụng");
                     }
