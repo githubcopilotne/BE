@@ -102,5 +102,62 @@ namespace BE.Services.Implementations
                 return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
             }
         }
+
+        // ==================== GET PRODUCT DETAIL BY SLUG ====================
+        public async Task<ApiResponse<object>> GetProductDetail(string slug)
+        {
+            try
+            {
+                var product = await _context.Products
+                    .Where(p => p.Slug == slug && p.Status == 1)
+                    .Select(p => new ClientProductDetail
+                    {
+                        ProductId = p.ProductId,
+                        ProductName = p.ProductName,
+                        Slug = p.Slug,
+                        UnitPrice = p.UnitPrice,
+                        Description = p.Description,
+                        CategorySlug = p.Category.Slug,
+                        Rating = p.Reviews.Any(r => r.Status == 1)
+                            ? Math.Round(p.Reviews.Where(r => r.Status == 1).Average(r => (double)r.Rating), 1)
+                            : 0,
+                        ReviewCount = p.Reviews.Count(r => r.Status == 1),
+                        Images = p.ProductImages.Select(img => new ProductImageDto
+                        {
+                            ImageId = img.ImageId,
+                            ImageUrl = img.ImageUrl,
+                            IsMain = img.IsMain
+                        }).ToList(),
+                        Variants = p.ProductVariants.Select(v => new ProductVariantDto
+                        {
+                            VariantId = v.VariantId,
+                            Color = v.Color,
+                            Size = v.Size,
+                            StockQuantity = v.StockQuantity
+                        }).ToList(),
+                        Reviews = p.Reviews
+                            .Where(r => r.Status == 1)
+                            .OrderByDescending(r => r.CreatedAt)
+                            .Select(r => new ProductReviewDto
+                            {
+                                UserName = r.User.FullName,
+                                Rating = r.Rating,
+                                Comment = r.Comment,
+                                ImageUrl = r.ImageUrl,
+                                CreatedAt = r.CreatedAt
+                            }).ToList()
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (product == null)
+                    return ApiResponse<object>.ErrorResponse("Không tìm thấy sản phẩm");
+
+                return ApiResponse<object>.SuccessResponse(product, "Lấy chi tiết sản phẩm thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
     }
 }

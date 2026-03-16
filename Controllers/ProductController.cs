@@ -31,5 +31,16 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpGet("{slug}")]
+        public async Task<IActionResult> GetProductDetail(string slug)
+        {
+            var result = await _productService.GetProductDetail(slug);
+
+            if (result.Success)
+                return Ok(result);
+
+            return NotFound(result);
+        }
     }
 }
