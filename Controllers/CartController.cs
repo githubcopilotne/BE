@@ -65,5 +65,17 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPost("sync")]
+        public async Task<IActionResult> SyncCart(SyncCartRequest request)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await _cartService.SyncCart(userId, request);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }

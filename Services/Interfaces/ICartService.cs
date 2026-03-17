@@ -9,5 +9,6 @@ namespace BE.Services.Interfaces
         Task<ApiResponse<object>> AddToCart(int userId, AddToCartRequest request);
         Task<ApiResponse<object>> UpdateCartItem(int userId, UpdateCartItemRequest request);
         Task<ApiResponse<object>> RemoveFromCart(int userId, int variantId);
+        Task<ApiResponse<object>> SyncCart(int userId, SyncCartRequest request);
     }
 }

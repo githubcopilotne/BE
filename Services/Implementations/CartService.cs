@@ -179,5 +179,88 @@ namespace BE.Services.Implementations
                 return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
             }
         }
+
+        // ==================== SYNC CART ====================
+        public async Task<ApiResponse<object>> SyncCart(int userId, SyncCartRequest request)
+        {
+            try
+            {
+                // 1. Lấy hoặc tạo Cart cho user
+                var cart = await _context.Carts
+                    .Include(c => c.CartItems)
+                    .FirstOrDefaultAsync(c => c.UserId == userId);
+
+                if (cart == null)
+                {
+                    cart = new Cart
+                    {
+                        UserId = userId,
+                        CreatedAt = DateTime.Now
+                    };
+                    _context.Carts.Add(cart);
+                    await _context.SaveChangesAsync();
+                }
+
+                // 2. Duyệt từng item từ localStorage
+                foreach (var item in request.Items)
+                {
+                    if (item.Quantity <= 0) continue;
+
+                    // Kiểm tra variant tồn tại
+                    var variant = await _context.ProductVariants
+                        .FirstOrDefaultAsync(v => v.VariantId == item.VariantId);
+
+                    if (variant == null) continue;
+
+                    var existingItem = cart.CartItems
+                        .FirstOrDefault(ci => ci.VariantId == item.VariantId);
+
+                    if (existingItem != null)
+                    {
+                        // Đã có trong DB → lấy quantity lớn hơn, giới hạn bởi stock
+                        var maxQuantity = Math.Max(existingItem.Quantity, item.Quantity);
+                        existingItem.Quantity = Math.Min(maxQuantity, variant.StockQuantity);
+                    }
+                    else
+                    {
+                        // Chưa có → thêm mới, giới hạn bởi stock
+                        cart.CartItems.Add(new CartItem
+                        {
+                            VariantId = item.VariantId,
+                            Quantity = Math.Min(item.Quantity, variant.StockQuantity)
+                        });
+                    }
+                }
+
+                cart.UpdatedAt = DateTime.Now;
+                await _context.SaveChangesAsync();
+
+                // 3. Trả về giỏ hàng mới sau sync
+                var items = await _context.Carts
+                    .Where(c => c.UserId == userId)
+                    .Select(c => c.CartItems.Select(ci => new CartItemDto
+                    {
+                        VariantId = ci.VariantId,
+                        ProductName = ci.Variant.Product.ProductName,
+                        Slug = ci.Variant.Product.Slug,
+                        ImageUrl = ci.Variant.Product.ProductImages
+                            .Where(img => img.IsMain)
+                            .Select(img => img.ImageUrl)
+                            .First(),
+                        Color = ci.Variant.Color,
+                        Size = ci.Variant.Size,
+                        UnitPrice = ci.Variant.Product.UnitPrice,
+                        Quantity = ci.Quantity,
+                        StockQuantity = ci.Variant.StockQuantity
+                    }).ToList())
+                    .FirstOrDefaultAsync();
+
+                return ApiResponse<object>.SuccessResponse(items ?? new List<CartItemDto>(), "Đồng bộ giỏ hàng thành công");
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<object>.ErrorResponse("Đã xảy ra lỗi: " + ex.Message);
+            }
+        }
     }
 }
