@@ -135,6 +135,7 @@ namespace BE.Services.Implementations
 
                 // 2. Tìm cart item
                 var cartItem = await _context.CartItems
+                    .Include(ci => ci.Cart)
                     .Include(ci => ci.Variant)
                     .FirstOrDefaultAsync(ci => ci.Cart.UserId == userId && ci.VariantId == request.VariantId);
 
