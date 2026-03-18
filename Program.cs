@@ -25,6 +25,7 @@ builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IVoucherService, VoucherService>();
 
 // =============================================
 // 3. Memory Cache — lưu OTP tạm thời
