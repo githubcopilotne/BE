@@ -1,5 +1,6 @@
 using BE.DTOs;
 using BE.DTOs.Order;
+using BE.Helpers;
 using BE.Models;
 using BE.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -9,11 +10,58 @@ namespace BE.Services.Implementations
     public class OrderService : IOrderService
     {
         private readonly ShopQuanAoContext _context;
+        private readonly VnPayHelper _vnPayHelper;
 
-        public OrderService(ShopQuanAoContext context)
+        public OrderService(ShopQuanAoContext context, VnPayHelper vnPayHelper)
         {
             _context = context;
+            _vnPayHelper = vnPayHelper;
         }
+
+        public string CreateVnPayUrl(int orderId, decimal totalMoney, string ipAddress)
+        {
+            return _vnPayHelper.CreatePaymentUrl(
+                orderId,
+                totalMoney,
+                $"Thanh toan don hang {orderId}",
+                ipAddress
+            );
+        }
+
+        public async Task<ApiResponse<object>> VnPayReturn(IQueryCollection queryParams)
+        {
+            // Bước 1: Verify chữ ký
+            var isValid = _vnPayHelper.ValidateSignature(queryParams);
+            if (!isValid)
+                return ApiResponse<object>.ErrorResponse("Chữ ký không hợp lệ");
+
+            // Bước 2: Lấy thông tin từ params
+            var vnpResponseCode = queryParams["vnp_ResponseCode"].ToString();
+            var orderId = int.Parse(queryParams["vnp_TxnRef"].ToString());
+
+            // Bước 3: Tìm order
+            var order = await _context.Orders.FindAsync(orderId);
+            if (order == null)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
+
+            // Bước 4: Cập nhật paymentStatus
+            if (vnpResponseCode == "00") // 00 = thanh toán thành công
+            {
+                order.PaymentStatus = 1;
+                await _context.SaveChangesAsync();
+
+                return ApiResponse<object>.SuccessResponse(
+                    new { orderId, paymentStatus = 1 },
+                    "Thanh toán thành công"
+                );
+            }
+
+            return ApiResponse<object>.SuccessResponse(
+                new { orderId, paymentStatus = 0, responseCode = vnpResponseCode },
+                "Thanh toán thất bại hoặc bị hủy"
+            );
+        }
+
 
         public async Task<ApiResponse<object>> CreateOrder(int userId, CreateOrderRequest request)
         {
@@ -158,7 +206,7 @@ namespace BE.Services.Implementations
                 await transaction.CommitAsync();
 
                 return ApiResponse<object>.SuccessResponse(
-                    new { orderId = order.OrderId },
+                    new { orderId = order.OrderId, totalMoney },
                     "Đặt hàng thành công"
                 );
             }

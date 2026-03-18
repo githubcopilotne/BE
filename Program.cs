@@ -1,5 +1,6 @@
 using System.Text;
 using BE.Models;
+using BE.Helpers;
 using BE.Services.Implementations;
 using BE.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -27,6 +28,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<VnPayHelper>();
 
 // =============================================
 // 3. Memory Cache — lưu OTP tạm thời
