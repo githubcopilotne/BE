@@ -46,11 +46,8 @@ public class VnPayHelper
 
         foreach (var (key, value) in vnpParams)
         {
-            // Query string: key=value&key2=value2
             queryString.Append(WebUtility.UrlEncode(key) + "=" + WebUtility.UrlEncode(value) + "&");
-
-            // Hash data: key=value&key2=value2 (dùng để tạo chữ ký)
-            hashData.Append(key + "=" + value + "&");
+            hashData.Append(WebUtility.UrlEncode(key) + "=" + WebUtility.UrlEncode(value) + "&");
         }
 
         // Xóa dấu & cuối
@@ -81,11 +78,11 @@ public class VnPayHelper
             }
         }
 
-        // Nối thành chuỗi → HMAC-SHA512
+        // Nối thành chuỗi (URL encode) → HMAC-SHA512
         var hashData = new StringBuilder();
         foreach (var (key, value) in sortedParams)
         {
-            hashData.Append(key + "=" + value + "&");
+            hashData.Append(WebUtility.UrlEncode(key) + "=" + WebUtility.UrlEncode(value) + "&");
         }
         hashData.Length--; // Xóa & cuối
 
