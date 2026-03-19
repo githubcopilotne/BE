@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace BE.Models;
@@ -30,6 +30,8 @@ public partial class Order
     public string? Note { get; set; }
 
     public DateTime OrderDate { get; set; }
+
+    public DateTime? PaymentExpireAt { get; set; }
 
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
