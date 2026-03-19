@@ -486,5 +486,24 @@ namespace BE.Services.Implementations
                 order.Status == 3 ? "Đơn hàng đang được giao" : "Đơn hàng đã giao thành công"
             );
         }
+
+
+        public async Task<ApiResponse<object>> AdminCancelOrder(int orderId)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+
+            if (order == null)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
+
+            if (order.Status != 1)
+                return ApiResponse<object>.ErrorResponse("Chỉ có thể hủy đơn hàng đang chờ xác nhận");
+
+            await CancelOrder(order);
+
+            return ApiResponse<object>.SuccessResponse(
+                new { orderId, status = 5 },
+                "Hủy đơn hàng thành công"
+            );
+        }
     }
 }

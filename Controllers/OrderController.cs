@@ -107,5 +107,17 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPatch("{id}/cancel")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> AdminCancelOrder(int id)
+        {
+            var result = await _orderService.AdminCancelOrder(id);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }
