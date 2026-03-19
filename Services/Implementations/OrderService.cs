@@ -266,5 +266,74 @@ namespace BE.Services.Implementations
 
             await _context.SaveChangesAsync();
         }
+
+
+        public async Task<ApiResponse<object>> GetOrders(int? status, int? paymentStatus, int? paymentMethod, string? search, int page, int pageSize)
+        {
+            var query = _context.Orders.AsQueryable();
+
+            // Filter
+            if (status.HasValue)
+                query = query.Where(o => o.Status == status.Value);
+
+            if (paymentStatus.HasValue)
+                query = query.Where(o => o.PaymentStatus == paymentStatus.Value);
+
+            if (paymentMethod.HasValue)
+                query = query.Where(o => o.PaymentMethod == paymentMethod.Value);
+
+            // Tìm kiếm: mã đơn, SĐT, tên khách
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var keyword = search.Trim();
+
+                // Nếu keyword chứa "DH" → tìm chính xác theo OrderId
+                if (keyword.StartsWith("DH", StringComparison.OrdinalIgnoreCase) ||
+                    keyword.StartsWith("#DH", StringComparison.OrdinalIgnoreCase))
+                {
+                    var numPart = keyword.Replace("#", "").Replace("DH", "", StringComparison.OrdinalIgnoreCase);
+                    if (int.TryParse(numPart, out int orderId))
+                        query = query.Where(o => o.OrderId == orderId);
+                }
+                else
+                {
+                    // Tìm theo tên, SĐT, hoặc mã đơn (nếu là số ngắn)
+                    query = query.Where(o =>
+                        o.FullName.Contains(keyword) ||
+                        o.Phone.Contains(keyword) ||
+                        o.OrderId.ToString() == keyword
+                    );
+                }
+            }
+
+            // Sắp xếp: mới nhất lên đầu
+            query = query.OrderByDescending(o => o.OrderDate);
+
+            // Phân trang
+            var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+
+            var orders = await query
+                .Skip(page * pageSize)
+                .Take(pageSize)
+                .Select(o => new OrderListResponse
+                {
+                    OrderId = o.OrderId,
+                    FullName = o.FullName,
+                    TotalMoney = o.TotalMoney,
+                    PaymentMethod = o.PaymentMethod,
+                    PaymentStatus = o.PaymentStatus,
+                    Status = o.Status,
+                    OrderDate = o.OrderDate
+                })
+                .ToListAsync();
+
+            return ApiResponse<object>.SuccessResponse(new
+            {
+                items = orders,
+                totalPages,
+                currentPage = page
+            });
+        }
     }
 }

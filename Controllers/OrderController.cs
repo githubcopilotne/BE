@@ -57,5 +57,19 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpGet]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> GetOrders(
+            [FromQuery] int? status,
+            [FromQuery] int? paymentStatus,
+            [FromQuery] int? paymentMethod,
+            [FromQuery] string? search,
+            [FromQuery] int page = 0,
+            [FromQuery] int pageSize = 10)
+        {
+            var result = await _orderService.GetOrders(status, paymentStatus, paymentMethod, search, page, pageSize);
+            return Ok(result);
+        }
     }
 }
