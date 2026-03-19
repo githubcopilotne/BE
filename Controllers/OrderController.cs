@@ -83,5 +83,17 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPut("{id}/confirm")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> ConfirmOrder(int id, ConfirmOrderRequest request)
+        {
+            var result = await _orderService.ConfirmOrder(id, request);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }

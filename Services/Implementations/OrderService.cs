@@ -390,5 +390,75 @@ namespace BE.Services.Implementations
 
             return ApiResponse<object>.SuccessResponse(response, "Lấy chi tiết đơn hàng thành công");
         }
+
+
+        public async Task<ApiResponse<object>> ConfirmOrder(int orderId, ConfirmOrderRequest request)
+        {
+            var order = await _context.Orders
+                .Include(o => o.OrderItems)
+                .Include(o => o.Voucher)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+            if (order == null)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
+
+            if (order.Status != 1)
+                return ApiResponse<object>.ErrorResponse("Chỉ có thể xác nhận đơn hàng đang chờ xác nhận");
+
+            // Nếu không tick sản phẩm nào → hủy toàn bộ đơn
+            if (request.ConfirmedItemIds == null || request.ConfirmedItemIds.Count == 0)
+            {
+                await CancelOrder(order);
+                return ApiResponse<object>.SuccessResponse(
+                    new { orderId, status = 5 },
+                    "Không có sản phẩm nào được xác nhận, đơn hàng đã bị hủy"
+                );
+            }
+
+            // Xử lý item không được tick → bỏ + hoàn stock
+            foreach (var item in order.OrderItems)
+            {
+                if (!request.ConfirmedItemIds.Contains(item.OrderItemId))
+                {
+                    item.IsConfirmed = false;
+
+                    // Hoàn stock cho sản phẩm bị bỏ
+                    var variant = await _context.ProductVariants.FindAsync(item.VariantId);
+                    if (variant != null)
+                        variant.StockQuantity += item.Quantity;
+                }
+            }
+
+            // Tính lại subtotal (chỉ item confirmed)
+            var newSubtotal = order.OrderItems
+                .Where(oi => oi.IsConfirmed)
+                .Sum(oi => oi.TotalMoney);
+
+            // Tính lại voucher discount
+            decimal newDiscount = 0;
+            if (order.VoucherId != null && order.Voucher != null)
+            {
+                if (order.Voucher.DiscountType == 1) // Giảm %
+                    newDiscount = Math.Round(newSubtotal * order.Voucher.DiscountValue / 100, 2);
+                else // Giảm tiền trực tiếp
+                    newDiscount = order.Voucher.DiscountValue;
+
+                // Discount không được lớn hơn subtotal
+                if (newDiscount > newSubtotal)
+                    newDiscount = newSubtotal;
+            }
+
+            // Cập nhật order
+            order.DiscountAmount = newDiscount;
+            order.TotalMoney = newSubtotal - newDiscount;
+            order.Status = 2; // Đã xác nhận
+
+            await _context.SaveChangesAsync();
+
+            return ApiResponse<object>.SuccessResponse(
+                new { orderId, status = 2, totalMoney = order.TotalMoney },
+                "Xác nhận đơn hàng thành công"
+            );
+        }
     }
 }
