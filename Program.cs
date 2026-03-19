@@ -6,6 +6,7 @@ using BE.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using BE.Jobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,7 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<VnPayHelper>();
+builder.Services.AddHostedService<ExpiredOrderJob>();
 
 // =============================================
 // 3. Memory Cache — lưu OTP tạm thời
