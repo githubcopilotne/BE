@@ -95,5 +95,17 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPatch("{id}/status")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> UpdateOrderStatus(int id)
+        {
+            var result = await _orderService.UpdateOrderStatus(id);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }

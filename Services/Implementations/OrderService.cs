@@ -460,5 +460,31 @@ namespace BE.Services.Implementations
                 "Xác nhận đơn hàng thành công"
             );
         }
+
+
+        public async Task<ApiResponse<object>> UpdateOrderStatus(int orderId)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+
+            if (order == null)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
+
+            // Chỉ cho phép: 2→3, 3→4
+            if (order.Status != 2 && order.Status != 3)
+                return ApiResponse<object>.ErrorResponse("Không thể chuyển trạng thái đơn hàng này");
+
+            order.Status += 1;
+
+            // COD + đã giao → tự set đã thanh toán
+            if (order.PaymentMethod == 0 && order.Status == 4)
+                order.PaymentStatus = 1;
+
+            await _context.SaveChangesAsync();
+
+            return ApiResponse<object>.SuccessResponse(
+                new { orderId, status = order.Status },
+                order.Status == 3 ? "Đơn hàng đang được giao" : "Đơn hàng đã giao thành công"
+            );
+        }
     }
 }

@@ -13,5 +13,6 @@ namespace BE.Services.Interfaces
         Task<ApiResponse<object>> GetOrders(int? status, int? paymentStatus, int? paymentMethod, string? search, int page, int pageSize);
         Task<ApiResponse<object>> GetOrderDetail(int orderId);
         Task<ApiResponse<object>> ConfirmOrder(int orderId, ConfirmOrderRequest request);
+        Task<ApiResponse<object>> UpdateOrderStatus(int orderId);
     }
 }
