@@ -44,10 +44,22 @@ namespace BE.Services.Implementations
             if (order == null)
                 return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
 
-            // Bước 4: Cập nhật paymentStatus
-            if (vnpResponseCode == "00") // 00 = thanh toán thành công
+            // Bước 4: Check trùng — đã thanh toán rồi thì không xử lý lại
+            if (order.PaymentStatus == 1)
+                return ApiResponse<object>.SuccessResponse(
+                    new { orderId, paymentStatus = 1 },
+                    "Đơn hàng đã được thanh toán trước đó"
+                );
+
+            // Bước 5: Check đã hủy — đơn bị Background Job hủy rồi
+            if (order.Status == 5)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng đã bị hủy");
+
+            // Bước 6: Xử lý kết quả thanh toán
+            if (vnpResponseCode == "00") // Thanh toán thành công
             {
                 order.PaymentStatus = 1;
+                order.Status = 1;
                 await _context.SaveChangesAsync();
 
                 return ApiResponse<object>.SuccessResponse(
@@ -56,9 +68,12 @@ namespace BE.Services.Implementations
                 );
             }
 
+            // Thanh toán thất bại → hủy đơn + hoàn stock + hoàn voucher
+            await CancelOrder(order);
+
             return ApiResponse<object>.SuccessResponse(
                 new { orderId, paymentStatus = 0, responseCode = vnpResponseCode },
-                "Thanh toán thất bại hoặc bị hủy"
+                "Thanh toán thất bại, đơn hàng đã được hủy"
             );
         }
 
@@ -172,12 +187,15 @@ namespace BE.Services.Implementations
                     Address = request.Address.Trim(),
                     Note = request.Note?.Trim(),
                     PaymentMethod = request.PaymentMethod,
-                    PaymentStatus = 0,       // Chưa thanh toán
-                    Status = 0,              // Chờ xác nhận
+                    PaymentStatus = 0,
+                    Status = request.PaymentMethod == 1 ? 0 : 1, // VNPay: Chờ thanh toán (0), COD: Chờ xác nhận (1)
                     VoucherId = request.VoucherId,
                     DiscountAmount = discountAmount,
                     TotalMoney = totalMoney,
                     OrderDate = DateTime.Now,
+                    PaymentExpireAt = request.PaymentMethod == 1
+                        ? DateTime.Now.AddMinutes(15)  // VNPay: hạn 15 phút
+                        : null,                        // COD: không cần
                 };
 
                 _context.Orders.Add(order);
@@ -215,6 +233,38 @@ namespace BE.Services.Implementations
                 await transaction.RollbackAsync();
                 return ApiResponse<object>.ErrorResponse("Đặt hàng thất bại, vui lòng thử lại");
             }
+        }
+
+
+        /// <summary>
+        /// Hủy đơn hàng: set status = 5, hoàn stock, hoàn voucher (nếu có)
+        /// Dùng chung cho: VNPay thất bại, Background Job, user tự hủy
+        /// </summary>
+        public async Task CancelOrder(Order order)
+        {
+            order.Status = 5; // Đã hủy
+
+            // Hoàn stock: lấy tất cả order items → cộng lại stock cho từng variant
+            var orderItems = await _context.OrderItems
+                .Where(oi => oi.OrderId == order.OrderId)
+                .ToListAsync();
+
+            foreach (var item in orderItems)
+            {
+                var variant = await _context.ProductVariants.FindAsync(item.VariantId);
+                if (variant != null)
+                    variant.StockQuantity += item.Quantity;
+            }
+
+            // Hoàn voucher: nếu đơn có dùng voucher → giảm usedCount
+            if (order.VoucherId != null)
+            {
+                var voucher = await _context.Vouchers.FindAsync(order.VoucherId);
+                if (voucher != null && voucher.UsedCount > 0)
+                    voucher.UsedCount -= 1;
+            }
+
+            await _context.SaveChangesAsync();
         }
     }
 }
