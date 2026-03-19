@@ -71,5 +71,17 @@ namespace BE.Controllers
             var result = await _orderService.GetOrders(status, paymentStatus, paymentMethod, search, page, pageSize);
             return Ok(result);
         }
+
+        [HttpGet("{id}")]
+        [Authorize(Roles = "Admin,Staff")]
+        public async Task<IActionResult> GetOrderDetail(int id)
+        {
+            var result = await _orderService.GetOrderDetail(id);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }

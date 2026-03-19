@@ -333,7 +333,62 @@ namespace BE.Services.Implementations
                 items = orders,
                 totalPages,
                 currentPage = page
-            });
+            }, "Lấy danh sách đơn hàng thành công");
+        }
+
+
+        public async Task<ApiResponse<object>> GetOrderDetail(int orderId)
+        {
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .Include(o => o.Voucher)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Variant)
+                        .ThenInclude(v => v.Product)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+            if (order == null)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
+
+            var response = new OrderDetailResponse
+            {
+                // Thông tin đơn
+                OrderId = order.OrderId,
+                OrderDate = order.OrderDate,
+                Status = order.Status,
+                PaymentMethod = order.PaymentMethod,
+                PaymentStatus = order.PaymentStatus,
+
+                // Thông tin khách
+                FullName = order.FullName,
+                Email = order.User.Email,
+                Phone = order.Phone,
+                Address = order.Address,
+                Note = order.Note,
+
+                // Thông tin giá
+                Subtotal = order.OrderItems
+                    .Where(oi => oi.IsConfirmed)
+                    .Sum(oi => oi.TotalMoney),
+                VoucherCode = order.Voucher?.VoucherCode,
+                DiscountAmount = order.DiscountAmount ?? 0,
+                TotalMoney = order.TotalMoney,
+
+                // Danh sách sản phẩm
+                Items = order.OrderItems.Select(oi => new OrderItemDetail
+                {
+                    OrderItemId = oi.OrderItemId,
+                    ProductName = oi.Variant.Product.ProductName,
+                    Color = oi.Variant.Color,
+                    Size = oi.Variant.Size,
+                    Price = oi.Price,
+                    Quantity = oi.Quantity,
+                    TotalMoney = oi.TotalMoney,
+                    IsConfirmed = oi.IsConfirmed
+                }).ToList()
+            };
+
+            return ApiResponse<object>.SuccessResponse(response, "Lấy chi tiết đơn hàng thành công");
         }
     }
 }

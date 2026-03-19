@@ -11,5 +11,6 @@ namespace BE.Services.Interfaces
         string CreateVnPayUrl(int orderId, decimal totalMoney, string ipAddress);
         Task CancelOrder(Order order);
         Task<ApiResponse<object>> GetOrders(int? status, int? paymentStatus, int? paymentMethod, string? search, int page, int pageSize);
+        Task<ApiResponse<object>> GetOrderDetail(int orderId);
     }
 }
