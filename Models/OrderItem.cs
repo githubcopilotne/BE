@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace BE.Models;
@@ -16,6 +16,8 @@ public partial class OrderItem
     public decimal Price { get; set; }
 
     public decimal TotalMoney { get; set; }
+
+    public bool IsConfirmed { get; set; } = true;
 
     public virtual Order Order { get; set; } = null!;
 
