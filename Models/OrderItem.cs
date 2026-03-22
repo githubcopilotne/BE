@@ -17,7 +17,6 @@ public partial class OrderItem
 
     public decimal TotalMoney { get; set; }
 
-    public bool IsConfirmed { get; set; } = true;
 
     public virtual Order Order { get; set; } = null!;
 

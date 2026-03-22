@@ -86,9 +86,9 @@ namespace BE.Controllers
 
         [HttpPut("{id}/confirm")]
         [Authorize(Roles = "Admin,Staff")]
-        public async Task<IActionResult> ConfirmOrder(int id, ConfirmOrderRequest request)
+        public async Task<IActionResult> ConfirmOrder(int id)
         {
-            var result = await _orderService.ConfirmOrder(id, request);
+            var result = await _orderService.ConfirmOrder(id);
 
             if (result.Success)
                 return Ok(result);
