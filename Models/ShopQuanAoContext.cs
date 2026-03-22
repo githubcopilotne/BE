@@ -168,9 +168,6 @@ public partial class ShopQuanAoContext : DbContext
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("total_money");
             entity.Property(e => e.VariantId).HasColumnName("variant_id");
-            entity.Property(e => e.IsConfirmed)
-                .HasDefaultValue(true)
-                .HasColumnName("is_confirmed");
 
             entity.HasOne(d => d.Order).WithMany(p => p.OrderItems)
                 .HasForeignKey(d => d.OrderId)
