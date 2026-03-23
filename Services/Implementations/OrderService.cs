@@ -452,5 +452,42 @@ namespace BE.Services.Implementations
                 "Hủy đơn hàng thành công"
             );
         }
+
+
+        public async Task<ApiResponse<object>> GetMyOrders(int userId, int? status, int page, int pageSize)
+        {
+            var query = _context.Orders
+                .Where(o => o.UserId == userId);
+
+            if (status.HasValue)
+                query = query.Where(o => o.Status == status.Value);
+
+            query = query.OrderByDescending(o => o.OrderDate);
+
+            var totalItems = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
+
+            var orders = await query
+                .Skip(page * pageSize)
+                .Take(pageSize)
+                .Select(o => new UserOrderListResponse
+                {
+                    OrderId = o.OrderId,
+                    OrderDate = o.OrderDate,
+                    Status = o.Status,
+                    TotalMoney = o.TotalMoney,
+                    PaymentMethod = o.PaymentMethod,
+                    PaymentStatus = o.PaymentStatus,
+                    TotalItems = o.OrderItems.Count
+                })
+                .ToListAsync();
+
+            return ApiResponse<object>.SuccessResponse(new
+            {
+                items = orders,
+                totalPages,
+                currentPage = page
+            }, "Lấy danh sách đơn hàng thành công");
+        }
     }
 }

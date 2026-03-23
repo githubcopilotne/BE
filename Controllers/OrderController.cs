@@ -119,5 +119,17 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpGet("my-orders")]
+        [Authorize]
+        public async Task<IActionResult> GetMyOrders(
+            [FromQuery] int? status,
+            [FromQuery] int page = 0,
+            [FromQuery] int pageSize = 10)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await _orderService.GetMyOrders(userId, status, page, pageSize);
+            return Ok(result);
+        }
     }
 }
