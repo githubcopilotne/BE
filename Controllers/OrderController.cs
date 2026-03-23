@@ -131,5 +131,18 @@ namespace BE.Controllers
             var result = await _orderService.GetMyOrders(userId, status, page, pageSize);
             return Ok(result);
         }
+
+        [HttpGet("my-orders/{id}")]
+        [Authorize]
+        public async Task<IActionResult> GetMyOrderDetail(int id)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await _orderService.GetMyOrderDetail(userId, id);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }

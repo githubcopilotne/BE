@@ -489,5 +489,54 @@ namespace BE.Services.Implementations
                 currentPage = page
             }, "Lấy danh sách đơn hàng thành công");
         }
+
+
+        public async Task<ApiResponse<object>> GetMyOrderDetail(int userId, int orderId)
+        {
+            var order = await _context.Orders
+                .Include(o => o.Voucher)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Variant)
+                        .ThenInclude(v => v.Product)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+            if (order == null)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
+
+            if (order.UserId != userId)
+                return ApiResponse<object>.ErrorResponse("Bạn không có quyền xem đơn hàng này");
+
+            var response = new OrderDetailResponse
+            {
+                OrderId = order.OrderId,
+                OrderDate = order.OrderDate,
+                Status = order.Status,
+                PaymentMethod = order.PaymentMethod,
+                PaymentStatus = order.PaymentStatus,
+
+                FullName = order.FullName,
+                Phone = order.Phone,
+                Address = order.Address,
+                Note = order.Note,
+
+                Subtotal = order.OrderItems.Sum(oi => oi.TotalMoney),
+                VoucherCode = order.Voucher?.VoucherCode,
+                DiscountAmount = order.DiscountAmount ?? 0,
+                TotalMoney = order.TotalMoney,
+
+                Items = order.OrderItems.Select(oi => new OrderItemDetail
+                {
+                    OrderItemId = oi.OrderItemId,
+                    ProductName = oi.Variant.Product.ProductName,
+                    Color = oi.Variant.Color,
+                    Size = oi.Variant.Size,
+                    Price = oi.Price,
+                    Quantity = oi.Quantity,
+                    TotalMoney = oi.TotalMoney,
+                }).ToList()
+            };
+
+            return ApiResponse<object>.SuccessResponse(response, "Lấy chi tiết đơn hàng thành công");
+        }
     }
 }
