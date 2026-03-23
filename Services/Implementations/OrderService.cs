@@ -585,5 +585,28 @@ namespace BE.Services.Implementations
                 "Hủy đơn hàng thành công"
             );
         }
+
+
+        public async Task<ApiResponse<object>> GetMyOrderCounts(int userId)
+        {
+            var counts = await _context.Orders
+                .Where(o => o.UserId == userId)
+                .GroupBy(o => o.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var result = new
+            {
+                all = counts.Sum(c => c.Count),
+                status0 = counts.FirstOrDefault(c => c.Status == 0)?.Count ?? 0,
+                status1 = counts.FirstOrDefault(c => c.Status == 1)?.Count ?? 0,
+                status2 = counts.FirstOrDefault(c => c.Status == 2)?.Count ?? 0,
+                status3 = counts.FirstOrDefault(c => c.Status == 3)?.Count ?? 0,
+                status4 = counts.FirstOrDefault(c => c.Status == 4)?.Count ?? 0,
+                status5 = counts.FirstOrDefault(c => c.Status == 5)?.Count ?? 0,
+            };
+
+            return ApiResponse<object>.SuccessResponse(result);
+        }
     }
 }

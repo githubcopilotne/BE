@@ -171,5 +171,14 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpGet("my-orders/counts")]
+        [Authorize]
+        public async Task<IActionResult> GetMyOrderCounts()
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await _orderService.GetMyOrderCounts(userId);
+            return Ok(result);
+        }
     }
 }
