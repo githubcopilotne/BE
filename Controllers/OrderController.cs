@@ -158,5 +158,18 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPatch("{id}/user-cancel")]
+        [Authorize]
+        public async Task<IActionResult> UserCancelOrder(int id)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var result = await _orderService.UserCancelOrder(userId, id);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }

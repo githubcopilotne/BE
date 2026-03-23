@@ -563,5 +563,27 @@ namespace BE.Services.Implementations
                 "Tạo link thanh toán thành công"
             );
         }
+
+
+        public async Task<ApiResponse<object>> UserCancelOrder(int userId, int orderId)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+
+            if (order == null)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
+
+            if (order.UserId != userId)
+                return ApiResponse<object>.ErrorResponse("Bạn không có quyền thao tác đơn hàng này");
+
+            if (order.Status != 0 && order.Status != 1)
+                return ApiResponse<object>.ErrorResponse("Chỉ có thể hủy đơn hàng đang chờ thanh toán hoặc chờ xác nhận");
+
+            await CancelOrder(order);
+
+            return ApiResponse<object>.SuccessResponse(
+                new { orderId, status = 5 },
+                "Hủy đơn hàng thành công"
+            );
+        }
     }
 }
