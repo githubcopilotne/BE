@@ -57,6 +57,10 @@ namespace BE.Services.Implementations
                                 .SelectMany(v => v.OrderItems)
                                 .Sum(oi => (int?)oi.Quantity) ?? 0);
                         break;
+                    case "most-favorited":
+                        // Đếm tổng lượt yêu thích từ bảng Wishlists — nhiều nhất lên đầu
+                        query = query.OrderByDescending(p => p.Wishlists.Count);
+                        break;
                     default: // "newest"
                         query = query.OrderByDescending(p => p.CreatedAt);
                         break;
