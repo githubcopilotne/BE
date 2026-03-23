@@ -606,7 +606,7 @@ namespace BE.Services.Implementations
                 status5 = counts.FirstOrDefault(c => c.Status == 5)?.Count ?? 0,
             };
 
-            return ApiResponse<object>.SuccessResponse(result);
+            return ApiResponse<object>.SuccessResponse(result, "Lấy số lượng đơn hàng thành công");
         }
     }
 }
