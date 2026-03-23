@@ -144,5 +144,19 @@ namespace BE.Controllers
 
             return BadRequest(result);
         }
+
+        [HttpPost("{id}/retry-payment")]
+        [Authorize]
+        public async Task<IActionResult> RetryPayment(int id)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "127.0.0.1";
+            var result = await _orderService.RetryPayment(userId, id, ipAddress);
+
+            if (result.Success)
+                return Ok(result);
+
+            return BadRequest(result);
+        }
     }
 }

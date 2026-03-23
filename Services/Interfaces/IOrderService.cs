@@ -17,5 +17,6 @@ namespace BE.Services.Interfaces
         Task<ApiResponse<object>> AdminCancelOrder(int orderId);
         Task<ApiResponse<object>> GetMyOrders(int userId, int? status, int page, int pageSize);
         Task<ApiResponse<object>> GetMyOrderDetail(int userId, int orderId);
+        Task<ApiResponse<object>> RetryPayment(int userId, int orderId, string ipAddress);
     }
 }

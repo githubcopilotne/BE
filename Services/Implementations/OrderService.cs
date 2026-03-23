@@ -538,5 +538,30 @@ namespace BE.Services.Implementations
 
             return ApiResponse<object>.SuccessResponse(response, "Lấy chi tiết đơn hàng thành công");
         }
+
+
+        public async Task<ApiResponse<object>> RetryPayment(int userId, int orderId, string ipAddress)
+        {
+            var order = await _context.Orders.FindAsync(orderId);
+
+            if (order == null)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
+
+            if (order.UserId != userId)
+                return ApiResponse<object>.ErrorResponse("Bạn không có quyền thao tác đơn hàng này");
+
+            if (order.Status != 0)
+                return ApiResponse<object>.ErrorResponse("Chỉ có thể thanh toán lại đơn hàng đang chờ thanh toán");
+
+            // Tạo link VNPay mới + gia hạn thêm 15 phút
+            var paymentUrl = CreateVnPayUrl(orderId, order.TotalMoney, ipAddress);
+            order.PaymentExpireAt = DateTime.Now.AddMinutes(15);
+            await _context.SaveChangesAsync();
+
+            return ApiResponse<object>.SuccessResponse(
+                new { paymentUrl },
+                "Tạo link thanh toán thành công"
+            );
+        }
     }
 }
