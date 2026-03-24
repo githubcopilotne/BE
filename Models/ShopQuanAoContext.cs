@@ -331,6 +331,9 @@ public partial class ShopQuanAoContext : DbContext
             entity.Property(e => e.PersonalEmail)
                 .HasMaxLength(255)
                 .HasColumnName("personal_email");
+            entity.Property(e => e.AvatarUrl)
+                .HasMaxLength(500)
+                .HasColumnName("avatar_url");
         });
 
         modelBuilder.Entity<Voucher>(entity =>
