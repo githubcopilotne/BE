@@ -14,6 +14,7 @@ namespace BE.DTOs.Staff
         public string? IdCard { get; set; }
         public DateOnly? HireDate { get; set; }
         public DateOnly? LeaveDate { get; set; }
+        public string? PersonalEmail { get; set; }
         public int Status { get; set; }
         public DateTime CreatedAt { get; set; }
     }

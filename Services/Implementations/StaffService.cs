@@ -108,6 +108,7 @@ namespace BE.Services.Implementations
                         IdCard = u.IdCard,
                         HireDate = u.HireDate,
                         LeaveDate = u.LeaveDate,
+                        PersonalEmail = u.PersonalEmail,
                         Status = u.Status,
                         CreatedAt = u.CreatedAt
                     })
@@ -135,6 +136,7 @@ namespace BE.Services.Implementations
                 request.Phone = request.Phone.Trim();
                 request.Address = request.Address.Trim();
                 request.IdCard = request.IdCard.Trim();
+                request.PersonalEmail = request.PersonalEmail.Trim().ToLower();
 
                 // 1. Validate email
                 if (string.IsNullOrWhiteSpace(request.Email))
@@ -197,6 +199,17 @@ namespace BE.Services.Implementations
                 if (request.HireDate > DateOnly.FromDateTime(DateTime.Now))
                     return ApiResponse<object>.ErrorResponse("Ngày vào làm không được lớn hơn ngày hiện tại");
 
+                // 11. Validate personalEmail
+                if (string.IsNullOrWhiteSpace(request.PersonalEmail))
+                    return ApiResponse<object>.ErrorResponse("Email cá nhân không được để trống");
+
+                if (!Regex.IsMatch(request.PersonalEmail, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                    return ApiResponse<object>.ErrorResponse("Email cá nhân không đúng định dạng");
+
+                var personalEmailExists = await _context.Users.AnyAsync(u => u.PersonalEmail == request.PersonalEmail);
+                if (personalEmailExists)
+                    return ApiResponse<object>.ErrorResponse("Email cá nhân đã được sử dụng");
+
                 // Auto-gen mã nhân viên (NV001, NV002...)
                 var lastCode = await _context.Users
                     .Where(u => u.EmployeeCode != null)
@@ -229,6 +242,7 @@ namespace BE.Services.Implementations
                     IdCard = request.IdCard,
                     HireDate = request.HireDate,
                     EmployeeCode = employeeCode,
+                    PersonalEmail = request.PersonalEmail,
                     Status = 1,
                     CreatedAt = DateTime.Now
                 };
@@ -263,63 +277,31 @@ namespace BE.Services.Implementations
                     return ApiResponse<object>.ErrorResponse("Không tìm thấy nhân viên");
 
                 // Trim input
-                request.FullName = request.FullName.Trim();
-                request.Phone = request.Phone.Trim();
-                request.Address = request.Address.Trim();
-                request.IdCard = request.IdCard.Trim();
+                request.PersonalEmail = request.PersonalEmail.Trim().ToLower();
 
-                // 1. Validate fullName
-                if (string.IsNullOrWhiteSpace(request.FullName))
-                    return ApiResponse<object>.ErrorResponse("Họ tên không được để trống");
-
-                // 2. Validate phone
-                if (string.IsNullOrWhiteSpace(request.Phone))
-                    return ApiResponse<object>.ErrorResponse("Số điện thoại không được để trống");
-
-                if (!Regex.IsMatch(request.Phone, @"^0\d{9}$"))
-                    return ApiResponse<object>.ErrorResponse("Số điện thoại không hợp lệ (bắt đầu bằng 0, đủ 10 số)");
-
-                var phoneExists = await _context.Users.AnyAsync(u => u.Phone == request.Phone && u.Role != "Customer" && u.UserId != id);
-                if (phoneExists)
-                    return ApiResponse<object>.ErrorResponse("Số điện thoại đã được sử dụng");
-
-                // 3. Validate gender
-                if (request.Gender != 0 && request.Gender != 1)
-                    return ApiResponse<object>.ErrorResponse("Giới tính không hợp lệ (0: Nữ, 1: Nam)");
-
-                // 4. Validate birthday
-                if (request.Birthday >= DateOnly.FromDateTime(DateTime.Now))
-                    return ApiResponse<object>.ErrorResponse("Ngày sinh phải nhỏ hơn ngày hiện tại");
-
-                // 5. Validate address
-                if (string.IsNullOrWhiteSpace(request.Address))
-                    return ApiResponse<object>.ErrorResponse("Địa chỉ không được để trống");
-
-                // 6. Validate role
+                // 1. Validate role
                 if (request.Role != "Admin" && request.Role != "Staff")
                     return ApiResponse<object>.ErrorResponse("Role phải là Admin hoặc Staff");
 
-                // 7. Validate idCard (CCCD 12 số)
-                if (!Regex.IsMatch(request.IdCard, @"^\d{12}$"))
-                    return ApiResponse<object>.ErrorResponse("CCCD phải đúng 12 chữ số");
-
-                var idCardExists = await _context.Users.AnyAsync(u => u.IdCard == request.IdCard && u.UserId != id);
-                if (idCardExists)
-                    return ApiResponse<object>.ErrorResponse("CCCD đã được sử dụng");
-
-                // 8. Validate hireDate
+                // 2. Validate hireDate
                 if (request.HireDate > DateOnly.FromDateTime(DateTime.Now))
                     return ApiResponse<object>.ErrorResponse("Ngày vào làm không được lớn hơn ngày hiện tại");
 
-                // Cập nhật thông tin
-                user.FullName = request.FullName;
-                user.Phone = request.Phone;
-                user.Gender = request.Gender;
-                user.Birthday = request.Birthday;
-                user.Address = request.Address;
+                // 3. Validate personalEmail
+                if (string.IsNullOrWhiteSpace(request.PersonalEmail))
+                    return ApiResponse<object>.ErrorResponse("Email cá nhân không được để trống");
+
+                if (!Regex.IsMatch(request.PersonalEmail, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                    return ApiResponse<object>.ErrorResponse("Email cá nhân không đúng định dạng");
+
+                var personalEmailExists = await _context.Users.AnyAsync(u => u.PersonalEmail == request.PersonalEmail && u.UserId != id);
+                if (personalEmailExists)
+                    return ApiResponse<object>.ErrorResponse("Email cá nhân đã được sử dụng");
+
+                // Cập nhật — chỉ 3 field admin được sửa
                 user.Role = request.Role;
-                user.IdCard = request.IdCard;
                 user.HireDate = request.HireDate;
+                user.PersonalEmail = request.PersonalEmail;
 
                 await _context.SaveChangesAsync();
 

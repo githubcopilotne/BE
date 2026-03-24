@@ -12,5 +12,6 @@ namespace BE.DTOs.Staff
         public string Role { get; set; } = null!;
         public string IdCard { get; set; } = null!;
         public DateOnly HireDate { get; set; }
+        public string PersonalEmail { get; set; } = null!;
     }
 }
