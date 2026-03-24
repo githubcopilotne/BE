@@ -328,6 +328,9 @@ public partial class ShopQuanAoContext : DbContext
             entity.Property(e => e.Status)
                 .HasDefaultValue(1)
                 .HasColumnName("status");
+            entity.Property(e => e.PersonalEmail)
+                .HasMaxLength(255)
+                .HasColumnName("personal_email");
         });
 
         modelBuilder.Entity<Voucher>(entity =>

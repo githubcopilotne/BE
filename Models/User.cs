@@ -37,6 +37,8 @@ public partial class User
 
     public DateOnly? LeaveDate { get; set; }
 
+    public string? PersonalEmail { get; set; }
+
     public virtual Cart? Cart { get; set; }
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();
