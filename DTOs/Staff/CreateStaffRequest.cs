@@ -13,5 +13,6 @@ namespace BE.DTOs.Staff
         public string IdCard { get; set; } = null!;
         public DateOnly HireDate { get; set; }
         public string PersonalEmail { get; set; } = null!;
+        public IFormFile Avatar { get; set; } = null!;
     }
 }

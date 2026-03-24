@@ -15,6 +15,7 @@ namespace BE.DTOs.Staff
         public DateOnly? HireDate { get; set; }
         public DateOnly? LeaveDate { get; set; }
         public string? PersonalEmail { get; set; }
+        public string? AvatarUrl { get; set; }
         public int Status { get; set; }
         public DateTime CreatedAt { get; set; }
     }

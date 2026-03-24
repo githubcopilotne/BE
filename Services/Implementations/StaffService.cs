@@ -11,11 +11,13 @@ namespace BE.Services.Implementations
     {
         private readonly ShopQuanAoContext _context;
         private readonly IEmailService _emailService;
+        private readonly ICloudinaryService _cloudinaryService;
 
-        public StaffService(ShopQuanAoContext context, IEmailService emailService)
+        public StaffService(ShopQuanAoContext context, IEmailService emailService, ICloudinaryService cloudinaryService)
         {
             _context = context;
             _emailService = emailService;
+            _cloudinaryService = cloudinaryService;
         }
 
         // ==================== GET ALL ====================
@@ -111,6 +113,7 @@ namespace BE.Services.Implementations
                         HireDate = u.HireDate,
                         LeaveDate = u.LeaveDate,
                         PersonalEmail = u.PersonalEmail,
+                        AvatarUrl = u.AvatarUrl,
                         Status = u.Status,
                         CreatedAt = u.CreatedAt
                     })
@@ -230,6 +233,9 @@ namespace BE.Services.Implementations
                 // Hash password
                 var hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
+                // Upload avatar lên Cloudinary
+                var avatarUrl = await _cloudinaryService.Upload(request.Avatar, "staff-avatars");
+
                 // Tạo user mới
                 var user = new User
                 {
@@ -245,6 +251,7 @@ namespace BE.Services.Implementations
                     HireDate = request.HireDate,
                     EmployeeCode = employeeCode,
                     PersonalEmail = request.PersonalEmail,
+                    AvatarUrl = avatarUrl,
                     Status = 1,
                     CreatedAt = DateTime.Now
                 };

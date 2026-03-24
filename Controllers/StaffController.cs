@@ -45,7 +45,7 @@ namespace BE.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Create(CreateStaffRequest request)
+        public async Task<IActionResult> Create([FromForm] CreateStaffRequest request)
         {
             var result = await _staffService.Create(request);
 
