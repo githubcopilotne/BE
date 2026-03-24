@@ -353,6 +353,14 @@ namespace BE.Services.Implementations
 
                 await _context.SaveChangesAsync();
 
+                // Gửi email thông báo khóa/mở khóa — fire-and-forget
+                if (user.PersonalEmail != null)
+                {
+                    _ = _emailService.SendStaffStatusChangedEmail(
+                        user.PersonalEmail, user.FullName, user.Email, user.Status == 0
+                    );
+                }
+
                 var statusText = user.Status == 1 ? "mở khóa" : "khóa";
                 return ApiResponse<object>.SuccessResponse(new
                 {

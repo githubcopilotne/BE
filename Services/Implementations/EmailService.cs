@@ -195,6 +195,47 @@ namespace BE.Services.Implementations
             await SendEmail(message);
         }
 
+        public async Task SendStaffStatusChangedEmail(string toEmail, string fullName, string internalEmail, bool isLocked)
+        {
+            var emailSettings = _config.GetSection("EmailSettings");
+
+            var headerColor = isLocked ? "#e74c3c" : "#27ae60";
+            var icon = isLocked ? "🔒" : "🔓";
+            var title = isLocked ? "Tài khoản đã bị khóa" : "Tài khoản đã được mở khóa";
+            var description = isLocked
+                ? "Tài khoản nội bộ của bạn đã bị khóa bởi quản trị viên. Bạn sẽ không thể đăng nhập."
+                : "Tài khoản nội bộ của bạn đã được mở khóa. Bạn có thể đăng nhập.";
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(emailSettings["SenderName"], emailSettings["SenderEmail"]!));
+            message.To.Add(new MailboxAddress("", toEmail));
+            message.Subject = $"{title} — Mavela";
+
+            message.Body = new TextPart("html")
+            {
+                Text = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
+                        <div style='background: {headerColor}; padding: 24px; text-align: center;'>
+                            <span style='font-size: 40px;'>{icon}</span>
+                            <h2 style='color: #ffffff; margin: 8px 0 0;'>{title}</h2>
+                        </div>
+                        <div style='padding: 24px;'>
+                            <p style='font-size: 16px; color: #333;'>Xin chào <strong>{fullName}</strong>,</p>
+                            <p style='font-size: 16px; color: #333;'>{description}</p>
+                            <div style='background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;'>
+                                <p style='margin: 4px 0; font-size: 15px;'><strong>Tài khoản:</strong> {internalEmail}</p>
+                            </div>
+                            <p style='font-size: 16px; color: #333;'>Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ quản trị viên.</p>
+                        </div>
+                        <div style='background: #f9f9f9; padding: 16px; text-align: center; border-top: 1px solid #e0e0e0;'>
+                            <p style='color: #999; font-size: 13px; margin: 0;'>Mavela — Hệ thống quản trị nội bộ</p>
+                        </div>
+                    </div>"
+            };
+
+            await SendEmail(message);
+        }
+
         private async Task SendEmail(MimeMessage message)
         {
             var emailSettings = _config.GetSection("EmailSettings");
