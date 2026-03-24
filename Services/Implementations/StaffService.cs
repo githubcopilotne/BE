@@ -72,6 +72,7 @@ namespace BE.Services.Implementations
                         Gender = u.Gender,
                         Role = u.Role,
                         HireDate = u.HireDate,
+                        AvatarUrl = u.AvatarUrl,
                         Status = u.Status
                     })
                     .ToListAsync();

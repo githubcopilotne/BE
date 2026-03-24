@@ -10,6 +10,7 @@ namespace BE.DTOs.Staff
         public int? Gender { get; set; }
         public string Role { get; set; } = null!;
         public DateOnly? HireDate { get; set; }
+        public string? AvatarUrl { get; set; }
         public int Status { get; set; }
     }
 }
