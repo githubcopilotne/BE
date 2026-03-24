@@ -10,10 +10,12 @@ namespace BE.Services.Implementations
     public class StaffService : IStaffService
     {
         private readonly ShopQuanAoContext _context;
+        private readonly IEmailService _emailService;
 
-        public StaffService(ShopQuanAoContext context)
+        public StaffService(ShopQuanAoContext context, IEmailService emailService)
         {
             _context = context;
+            _emailService = emailService;
         }
 
         // ==================== GET ALL ====================
@@ -249,6 +251,11 @@ namespace BE.Services.Implementations
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
+
+                // Gửi email thông báo tài khoản mới — fire-and-forget
+                _ = _emailService.SendStaffAccountCreatedEmail(
+                    user.PersonalEmail, user.FullName, user.Email, request.Password
+                );
 
                 return ApiResponse<object>.SuccessResponse(new
                 {

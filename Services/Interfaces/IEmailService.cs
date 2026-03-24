@@ -5,5 +5,6 @@ namespace BE.Services.Interfaces
         Task SendOtpEmail(string toEmail, string otpCode);
         Task SendOrderCancelledEmail(string toEmail, string fullName, int orderId);
         Task SendOrderConfirmedEmail(string toEmail, string fullName, int orderId);
+        Task SendStaffAccountCreatedEmail(string toEmail, string fullName, string internalEmail, string password);
     }
 }
