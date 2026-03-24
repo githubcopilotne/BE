@@ -388,6 +388,14 @@ namespace BE.Services.Implementations
                 user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
                 await _context.SaveChangesAsync();
 
+                // Gửi email mật khẩu mới — fire-and-forget
+                if (user.PersonalEmail != null)
+                {
+                    _ = _emailService.SendStaffPasswordResetEmail(
+                        user.PersonalEmail, user.FullName, user.Email, newPassword
+                    );
+                }
+
                 return ApiResponse<object>.SuccessResponse(new
                 {
                     newPassword

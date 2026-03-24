@@ -161,6 +161,40 @@ namespace BE.Services.Implementations
             await SendEmail(message);
         }
 
+        public async Task SendStaffPasswordResetEmail(string toEmail, string fullName, string internalEmail, string newPassword)
+        {
+            var emailSettings = _config.GetSection("EmailSettings");
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(emailSettings["SenderName"], emailSettings["SenderEmail"]!));
+            message.To.Add(new MailboxAddress("", toEmail));
+            message.Subject = "Mật khẩu tài khoản đã được đặt lại — Mavela";
+
+            message.Body = new TextPart("html")
+            {
+                Text = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
+                        <div style='background: #f59e0b; padding: 24px; text-align: center;'>
+                            <span style='font-size: 40px;'>🔑</span>
+                            <h2 style='color: #ffffff; margin: 8px 0 0;'>Mật khẩu đã được đặt lại</h2>
+                        </div>
+                        <div style='padding: 24px;'>
+                            <p style='font-size: 16px; color: #333;'>Xin chào <strong>{fullName}</strong>,</p>
+                            <p style='font-size: 16px; color: #333;'>Mật khẩu tài khoản <strong>{internalEmail}</strong> đã được quản trị viên đặt lại.</p>
+                            <div style='background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;'>
+                                <p style='margin: 4px 0; font-size: 15px;'><strong>Mật khẩu mới:</strong> {newPassword}</p>
+                            </div>
+                            <p style='font-size: 14px; color: #e74c3c;'>⚠️ Vui lòng đổi mật khẩu ngay sau khi đăng nhập.</p>
+                        </div>
+                        <div style='background: #f9f9f9; padding: 16px; text-align: center; border-top: 1px solid #e0e0e0;'>
+                            <p style='color: #999; font-size: 13px; margin: 0;'>Mavela — Hệ thống quản trị nội bộ</p>
+                        </div>
+                    </div>"
+            };
+
+            await SendEmail(message);
+        }
+
         private async Task SendEmail(MimeMessage message)
         {
             var emailSettings = _config.GetSection("EmailSettings");
