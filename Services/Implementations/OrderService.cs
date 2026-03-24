@@ -11,11 +11,13 @@ namespace BE.Services.Implementations
     {
         private readonly ShopQuanAoContext _context;
         private readonly VnPayHelper _vnPayHelper;
+        private readonly IEmailService _emailService;
 
-        public OrderService(ShopQuanAoContext context, VnPayHelper vnPayHelper)
+        public OrderService(ShopQuanAoContext context, VnPayHelper vnPayHelper, IEmailService emailService)
         {
             _context = context;
             _vnPayHelper = vnPayHelper;
+            _emailService = emailService;
         }
 
         public string CreateVnPayUrl(int orderId, decimal totalMoney, string ipAddress)
@@ -437,7 +439,9 @@ namespace BE.Services.Implementations
 
         public async Task<ApiResponse<object>> AdminCancelOrder(int orderId)
         {
-            var order = await _context.Orders.FindAsync(orderId);
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
 
             if (order == null)
                 return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
@@ -446,6 +450,9 @@ namespace BE.Services.Implementations
                 return ApiResponse<object>.ErrorResponse("Chỉ có thể hủy đơn hàng đang chờ xác nhận");
 
             await CancelOrder(order);
+
+            // Gửi email thông báo ngầm — không cần chờ, không block response
+            _ = _emailService.SendOrderCancelledEmail(order.User.Email, order.FullName, orderId);
 
             return ApiResponse<object>.SuccessResponse(
                 new { orderId, status = 5 },
