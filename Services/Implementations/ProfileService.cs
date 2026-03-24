@@ -32,7 +32,8 @@ namespace BE.Services.Implementations
                         Address = u.Address,
                         Role = u.Role,
                         EmployeeCode = u.EmployeeCode,
-                        HireDate = u.HireDate
+                        HireDate = u.HireDate,
+                        AvatarUrl = u.AvatarUrl
                     })
                     .FirstOrDefaultAsync();
 
@@ -107,7 +108,8 @@ namespace BE.Services.Implementations
                     Address = user.Address,
                     Role = user.Role,
                     EmployeeCode = user.EmployeeCode,
-                    HireDate = user.HireDate
+                    HireDate = user.HireDate,
+                    AvatarUrl = user.AvatarUrl
                 }, "Cập nhật thông tin thành công");
             }
             catch (Exception ex)

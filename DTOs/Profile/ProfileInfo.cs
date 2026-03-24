@@ -11,5 +11,6 @@ namespace BE.DTOs.Profile
         public string Role { get; set; } = null!;
         public string? EmployeeCode { get; set; }
         public DateOnly? HireDate { get; set; }
+        public string? AvatarUrl { get; set; }
     }
 }
