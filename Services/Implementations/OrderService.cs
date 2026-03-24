@@ -393,7 +393,9 @@ namespace BE.Services.Implementations
 
         public async Task<ApiResponse<object>> ConfirmOrder(int orderId)
         {
-            var order = await _context.Orders.FindAsync(orderId);
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.OrderId == orderId);
 
             if (order == null)
                 return ApiResponse<object>.ErrorResponse("Đơn hàng không tồn tại");
@@ -403,6 +405,9 @@ namespace BE.Services.Implementations
 
             order.Status = 2; // Đã xác nhận
             await _context.SaveChangesAsync();
+
+            // Gửi email thông báo ngầm — không cần chờ, không block response
+            _ = _emailService.SendOrderConfirmedEmail(order.User.Email, order.FullName, orderId);
 
             return ApiResponse<object>.SuccessResponse(
                 new { orderId, status = 2 },

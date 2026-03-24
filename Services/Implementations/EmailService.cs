@@ -83,7 +83,47 @@ namespace BE.Services.Implementations
             await SendEmail(message);
         }
 
-      
+        public async Task SendOrderConfirmedEmail(string toEmail, string fullName, int orderId)
+        {
+            var emailSettings = _config.GetSection("EmailSettings");
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(
+                emailSettings["SenderName"],
+                emailSettings["SenderEmail"]!
+            ));
+            message.To.Add(new MailboxAddress("", toEmail));
+            message.Subject = $"Xác nhận đơn hàng #DH{orderId:D5} - Shop Quần Áo";
+
+            message.Body = new TextPart("html")
+            {
+                Text = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
+                        <div style='background: #27ae60; padding: 24px; text-align: center;'>
+                            <span style='font-size: 40px;'>✓</span>
+                            <h2 style='color: #ffffff; margin: 8px 0 0;'>Đơn hàng đã được xác nhận</h2>
+                        </div>
+                        <div style='padding: 24px;'>
+                            <p style='font-size: 16px; color: #333;'>Xin chào <strong>{fullName}</strong>,</p>
+                            <p style='font-size: 16px; color: #333;'>
+                                Đơn hàng <strong style='color: #27ae60;'>#DH{orderId:D5}</strong> của bạn đã được xác nhận thành công.
+                            </p>
+                            <p style='font-size: 16px; color: #333;'>
+                                Chúng tôi sẽ chuẩn bị hàng và giao đến bạn trong thời gian sớm nhất.
+                            </p>
+                            <p style='font-size: 16px; color: #333;'>
+                                Cảm ơn bạn đã tin tưởng và mua sắm tại Shop Quần Áo!
+                            </p>
+                        </div>
+                        <div style='background: #f9f9f9; padding: 16px; text-align: center; border-top: 1px solid #e0e0e0;'>
+                            <p style='color: #999; font-size: 13px; margin: 0;'>Shop Quần Áo — Cảm ơn bạn đã mua sắm cùng chúng tôi!</p>
+                        </div>
+                    </div>"
+            };
+
+            await SendEmail(message);
+        }
+
         private async Task SendEmail(MimeMessage message)
         {
             var emailSettings = _config.GetSection("EmailSettings");
