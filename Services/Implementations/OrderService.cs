@@ -590,6 +590,10 @@ namespace BE.Services.Implementations
             if (order.Status != 0 && order.Status != 1)
                 return ApiResponse<object>.ErrorResponse("Chỉ có thể hủy đơn hàng đang chờ thanh toán hoặc chờ xác nhận");
 
+            // Đơn thanh toán online đã thanh toán không cho user tự hủy
+            if (order.PaymentMethod == 1 && order.Status == 1)
+                return ApiResponse<object>.ErrorResponse("Đơn hàng thanh toán online đã thanh toán không thể hủy. Vui lòng liên hệ hotline để được hỗ trợ");
+
             await CancelOrder(order);
 
             return ApiResponse<object>.SuccessResponse(
