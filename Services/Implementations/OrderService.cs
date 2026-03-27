@@ -164,9 +164,18 @@ namespace BE.Services.Implementations
                     if (voucher.UsedCount >= voucher.UsageLimit)
                         return ApiResponse<object>.ErrorResponse("Mã giảm giá đã hết lượt sử dụng");
 
+                    // Check đơn tối thiểu
+                    if (voucher.MinOrderValue.HasValue && subtotal < voucher.MinOrderValue.Value)
+                        return ApiResponse<object>.ErrorResponse($"Đơn hàng tối thiểu {voucher.MinOrderValue.Value:N0}đ để sử dụng mã giảm giá này");
+
                     // Tính discount: 1 = giảm %, 2 = giảm tiền trực tiếp
                     if (voucher.DiscountType == 1)
-                        discountAmount = Math.Round(subtotal * voucher.DiscountValue / 100, 2);
+                    {
+                        discountAmount = Math.Round(subtotal * voucher.DiscountValue / 100, 0);
+                        // Cap theo mức giảm tối đa
+                        if (voucher.MaxDiscountAmount.HasValue && discountAmount > voucher.MaxDiscountAmount.Value)
+                            discountAmount = voucher.MaxDiscountAmount.Value;
+                    }
                     else
                         discountAmount = voucher.DiscountValue;
 

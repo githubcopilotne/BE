@@ -49,6 +49,8 @@ namespace BE.Services.Implementations
                 VoucherCode = voucher.VoucherCode,
                 DiscountType = voucher.DiscountType,
                 DiscountValue = voucher.DiscountValue,
+                MaxDiscountAmount = voucher.MaxDiscountAmount,
+                MinOrderValue = voucher.MinOrderValue,
             };
 
             return ApiResponse<object>.SuccessResponse(response, "Áp dụng mã giảm giá thành công");

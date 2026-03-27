@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace BE.Models;
@@ -12,6 +12,10 @@ public partial class Voucher
     public int DiscountType { get; set; }
 
     public decimal DiscountValue { get; set; }
+
+    public decimal? MaxDiscountAmount { get; set; }
+
+    public decimal? MinOrderValue { get; set; }
 
     public int UsageLimit { get; set; }
 

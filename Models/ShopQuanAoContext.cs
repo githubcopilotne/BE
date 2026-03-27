@@ -350,6 +350,12 @@ public partial class ShopQuanAoContext : DbContext
             entity.Property(e => e.DiscountValue)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("discount_value");
+            entity.Property(e => e.MaxDiscountAmount)
+                .HasColumnType("decimal(18, 0)")
+                .HasColumnName("max_discount_amount");
+            entity.Property(e => e.MinOrderValue)
+                .HasColumnType("decimal(18, 0)")
+                .HasColumnName("min_order_value");
             entity.Property(e => e.ExpiryDate).HasColumnName("expiry_date");
             entity.Property(e => e.Status)
                 .HasDefaultValue(1)
