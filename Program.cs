@@ -30,6 +30,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IVoucherService, VoucherService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddSingleton<IGhnService, GhnService>();
 builder.Services.AddScoped<VnPayHelper>();
 builder.Services.AddHostedService<ExpiredOrderJob>();
 
