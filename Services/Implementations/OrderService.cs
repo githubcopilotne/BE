@@ -196,6 +196,12 @@ namespace BE.Services.Implementations
                     FullName = request.FullName.Trim(),
                     Phone = request.Phone.Trim(),
                     Address = request.Address.Trim(),
+                    ProvinceId = request.ProvinceId,
+                    ProvinceName = request.ProvinceName?.Trim(),
+                    DistrictId = request.DistrictId,
+                    DistrictName = request.DistrictName?.Trim(),
+                    WardCode = request.WardCode?.Trim(),
+                    WardName = request.WardName?.Trim(),
                     Note = request.Note?.Trim(),
                     PaymentMethod = request.PaymentMethod,
                     PaymentStatus = 0,
@@ -375,6 +381,9 @@ namespace BE.Services.Implementations
                 Email = order.User.Email,
                 Phone = order.Phone,
                 Address = order.Address,
+                ProvinceName = order.ProvinceName,
+                DistrictName = order.DistrictName,
+                WardName = order.WardName,
                 Note = order.Note,
 
                 // Thông tin giá
@@ -538,6 +547,9 @@ namespace BE.Services.Implementations
                 FullName = order.FullName,
                 Phone = order.Phone,
                 Address = order.Address,
+                ProvinceName = order.ProvinceName,
+                DistrictName = order.DistrictName,
+                WardName = order.WardName,
                 Note = order.Note,
 
                 Subtotal = order.OrderItems.Sum(oi => oi.TotalMoney),

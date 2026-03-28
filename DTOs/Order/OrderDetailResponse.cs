@@ -14,6 +14,9 @@ namespace BE.DTOs.Order
         public string Email { get; set; } = null!;
         public string Phone { get; set; } = null!;
         public string Address { get; set; } = null!;
+        public string? ProvinceName { get; set; }
+        public string? DistrictName { get; set; }
+        public string? WardName { get; set; }
         public string? Note { get; set; }
 
         // Thông tin giá
