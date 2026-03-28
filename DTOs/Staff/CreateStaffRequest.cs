@@ -9,6 +9,12 @@ namespace BE.DTOs.Staff
         public int Gender { get; set; }
         public DateOnly Birthday { get; set; }
         public string Address { get; set; } = null!;
+        public int? ProvinceId { get; set; }
+        public string? ProvinceName { get; set; }
+        public int? DistrictId { get; set; }
+        public string? DistrictName { get; set; }
+        public string? WardCode { get; set; }
+        public string? WardName { get; set; }
         public string Role { get; set; } = null!;
         public string IdCard { get; set; } = null!;
         public DateOnly HireDate { get; set; }
