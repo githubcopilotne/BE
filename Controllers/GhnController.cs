@@ -1,17 +1,26 @@
+using BE.DTOs;
+using BE.DTOs.Ghn;
+using BE.Models;
 using BE.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace BE.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class GhnController : ControllerBase
     {
         private readonly IGhnService _ghnService;
+        private readonly ShopQuanAoContext _context;
 
-        public GhnController(IGhnService ghnService)
+        public GhnController(IGhnService ghnService, ShopQuanAoContext context)
         {
             _ghnService = ghnService;
+            _context = context;
         }
 
         [HttpGet("provinces")]
@@ -32,6 +41,34 @@ namespace BE.Controllers
         public async Task<IActionResult> GetWards(int districtId)
         {
             var result = await _ghnService.GetWards(districtId);
+            return Ok(result);
+        }
+
+        [HttpPost("shipping-fee")]
+        public async Task<IActionResult> CalculateShippingFee(ShippingFeeRequest request)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            // Query cart items từ DB → tính tổng weight + subtotal
+            var cartItems = await _context.Carts
+                .Where(c => c.UserId == userId)
+                .SelectMany(c => c.CartItems)
+                .Select(ci => new
+                {
+                    ci.Variant.Product.Weight,
+                    ci.Variant.Product.UnitPrice,
+                    ci.Quantity
+                })
+                .ToListAsync();
+
+            if (!cartItems.Any())
+                return Ok(ApiResponse<object>.ErrorResponse("Giỏ hàng trống"));
+
+            var totalWeight = cartItems.Sum(i => i.Weight * i.Quantity);
+            var subtotal = cartItems.Sum(i => (int)(i.UnitPrice * i.Quantity));
+
+            var result = await _ghnService.CalculateShippingFee(
+                request.DistrictId, request.WardCode, totalWeight, subtotal);
             return Ok(result);
         }
     }

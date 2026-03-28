@@ -8,12 +8,16 @@ namespace BE.Services.Implementations
     {
         private readonly HttpClient _httpClient;
         private readonly string _masterDataUrl;
+        private readonly string _apiUrl;
+        private readonly string _shopId;
 
         public GhnService(IConfiguration configuration)
         {
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Add("Token", configuration["GHN:Token"]);
             _masterDataUrl = configuration["GHN:MasterDataUrl"]!;
+            _apiUrl = configuration["GHN:ApiUrl"]!;
+            _shopId = configuration["GHN:ShopId"]!.ToString();
         }
 
         public async Task<ApiResponse<object>> GetProvinces()
@@ -91,6 +95,42 @@ namespace BE.Services.Implementations
             catch
             {
                 return ApiResponse<object>.ErrorResponse("Không thể kết nối dịch vụ GHN");
+            }
+        }
+
+        // Tính phí vận chuyển qua GHN API
+        // Dùng HttpRequestMessage thay vì PostAsJsonAsync vì cần thêm header ShopId riêng cho request này
+        public async Task<ApiResponse<object>> CalculateShippingFee(int districtId, string wardCode, int weight, int insuranceValue)
+        {
+            try
+            {
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{_apiUrl}/shipping-order/fee")
+                {
+                    Content = JsonContent.Create(new
+                    {
+                        service_type_id = 2, // E-Commerce Delivery
+                        to_district_id = districtId,
+                        to_ward_code = wardCode,
+                        weight = weight,
+                        insurance_value = insuranceValue
+                    })
+                };
+                httpRequest.Headers.Add("ShopId", _shopId);
+
+                var response = await _httpClient.SendAsync(httpRequest);
+                var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+                var data = json.GetProperty("data");
+                var total = data.GetProperty("total").GetInt32();
+
+                return ApiResponse<object>.SuccessResponse(
+                    new { shippingFee = total },
+                    "Tính phí vận chuyển thành công"
+                );
+            }
+            catch
+            {
+                return ApiResponse<object>.ErrorResponse("Không thể tính phí vận chuyển");
             }
         }
     }

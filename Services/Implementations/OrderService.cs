@@ -12,12 +12,14 @@ namespace BE.Services.Implementations
         private readonly ShopQuanAoContext _context;
         private readonly VnPayHelper _vnPayHelper;
         private readonly IEmailService _emailService;
+        private readonly IGhnService _ghnService;
 
-        public OrderService(ShopQuanAoContext context, VnPayHelper vnPayHelper, IEmailService emailService)
+        public OrderService(ShopQuanAoContext context, VnPayHelper vnPayHelper, IEmailService emailService, IGhnService ghnService)
         {
             _context = context;
             _vnPayHelper = vnPayHelper;
             _emailService = emailService;
+            _ghnService = ghnService;
         }
 
         public string CreateVnPayUrl(int orderId, decimal totalMoney, string ipAddress)
@@ -114,6 +116,7 @@ namespace BE.Services.Implementations
                 // ==================== 3. CHECK STOCK + LẤY GIÁ ====================
                 var orderItems = new List<OrderItem>();
                 decimal subtotal = 0;
+                int totalWeight = 0;
 
                 foreach (var item in request.Items)
                 {
@@ -139,6 +142,7 @@ namespace BE.Services.Implementations
                     });
 
                     subtotal += itemTotal;
+                    totalWeight += variant.Product.Weight * item.Quantity;
 
                     // Giảm stock
                     variant.StockQuantity -= item.Quantity;
@@ -187,8 +191,23 @@ namespace BE.Services.Implementations
                     voucher.UsedCount += 1;
                 }
 
-                // ==================== 5. TẠO ORDER ====================
-                var totalMoney = subtotal - discountAmount;
+                // ==================== 5. TÍNH PHÍ VẬN CHUYỂN ====================
+                decimal shippingFee = 0;
+
+                if (request.DistrictId.HasValue && !string.IsNullOrWhiteSpace(request.WardCode))
+                {
+                    var result = await _ghnService.CalculateShippingFee(
+                        request.DistrictId.Value, request.WardCode, totalWeight, (int)subtotal);
+
+                    if (result.Success)
+                    {
+                        var feeData = (dynamic)result.Data;
+                        shippingFee = (decimal)(int)feeData.shippingFee;
+                    }
+                }
+
+                // ==================== 6. TẠO ORDER ====================
+                var totalMoney = Math.Max(subtotal - discountAmount, 0) + shippingFee;
 
                 var order = new Order
                 {
@@ -208,6 +227,7 @@ namespace BE.Services.Implementations
                     Status = request.PaymentMethod == 1 ? 0 : 1, // VNPay: Chờ thanh toán (0), COD: Chờ xác nhận (1)
                     VoucherId = request.VoucherId,
                     DiscountAmount = discountAmount,
+                    ShippingFee = shippingFee,
                     TotalMoney = totalMoney,
                     OrderDate = DateTime.Now,
                     PaymentExpireAt = request.PaymentMethod == 1
@@ -390,6 +410,7 @@ namespace BE.Services.Implementations
                 Subtotal = order.OrderItems.Sum(oi => oi.TotalMoney),
                 VoucherCode = order.Voucher?.VoucherCode,
                 DiscountAmount = order.DiscountAmount ?? 0,
+                ShippingFee = order.ShippingFee,
                 TotalMoney = order.TotalMoney,
 
                 // Danh sách sản phẩm
@@ -555,6 +576,7 @@ namespace BE.Services.Implementations
                 Subtotal = order.OrderItems.Sum(oi => oi.TotalMoney),
                 VoucherCode = order.Voucher?.VoucherCode,
                 DiscountAmount = order.DiscountAmount ?? 0,
+                ShippingFee = order.ShippingFee,
                 TotalMoney = order.TotalMoney,
 
                 Items = order.OrderItems.Select(oi => new OrderItemDetail

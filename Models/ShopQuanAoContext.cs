@@ -149,6 +149,10 @@ public partial class ShopQuanAoContext : DbContext
                 .HasMaxLength(15)
                 .HasColumnName("phone");
             entity.Property(e => e.Status).HasColumnName("status");
+            entity.Property(e => e.ShippingFee)
+                .HasDefaultValue(0m)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("shipping_fee");
             entity.Property(e => e.TotalMoney)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("total_money");

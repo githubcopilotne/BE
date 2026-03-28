@@ -7,5 +7,6 @@ namespace BE.Services.Interfaces
         Task<ApiResponse<object>> GetProvinces();
         Task<ApiResponse<object>> GetDistricts(int provinceId);
         Task<ApiResponse<object>> GetWards(int districtId);
+        Task<ApiResponse<object>> CalculateShippingFee(int districtId, string wardCode, int weight, int insuranceValue);
     }
 }

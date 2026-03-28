@@ -31,6 +31,8 @@ public partial class Order
 
     public string? WardName { get; set; }
 
+    public decimal ShippingFee { get; set; }
+
     public decimal TotalMoney { get; set; }
 
     public int PaymentMethod { get; set; }
