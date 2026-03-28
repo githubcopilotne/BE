@@ -219,6 +219,9 @@ public partial class ShopQuanAoContext : DbContext
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("unit_price");
             entity.Property(e => e.UpdatedAt).HasColumnName("updated_at");
+            entity.Property(e => e.Weight)
+                .HasDefaultValue(300)
+                .HasColumnName("weight");
 
             entity.HasOne(d => d.Category).WithMany(p => p.Products)
                 .HasForeignKey(d => d.CategoryId)

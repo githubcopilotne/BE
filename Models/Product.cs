@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace BE.Models;
@@ -18,6 +18,8 @@ public partial class Product
     public string Slug { get; set; } = null!;
 
     public int Status { get; set; }
+
+    public int Weight { get; set; }
 
     public DateTime CreatedAt { get; set; }
 
