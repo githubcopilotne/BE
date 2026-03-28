@@ -30,6 +30,12 @@ namespace BE.Services.Implementations
                         Gender = u.Gender,
                         Birthday = u.Birthday,
                         Address = u.Address,
+                        ProvinceId = u.ProvinceId,
+                        ProvinceName = u.ProvinceName,
+                        DistrictId = u.DistrictId,
+                        DistrictName = u.DistrictName,
+                        WardCode = u.WardCode,
+                        WardName = u.WardName,
                         Role = u.Role,
                         EmployeeCode = u.EmployeeCode,
                         HireDate = u.HireDate,
@@ -95,6 +101,12 @@ namespace BE.Services.Implementations
                 user.Gender = request.Gender;
                 user.Birthday = request.Birthday;
                 user.Address = request.Address;
+                user.ProvinceId = request.ProvinceId;
+                user.ProvinceName = request.ProvinceName?.Trim();
+                user.DistrictId = request.DistrictId;
+                user.DistrictName = request.DistrictName?.Trim();
+                user.WardCode = request.WardCode?.Trim();
+                user.WardName = request.WardName?.Trim();
 
                 await _context.SaveChangesAsync();
 
@@ -106,6 +118,12 @@ namespace BE.Services.Implementations
                     Gender = user.Gender,
                     Birthday = user.Birthday,
                     Address = user.Address,
+                    ProvinceId = user.ProvinceId,
+                    ProvinceName = user.ProvinceName,
+                    DistrictId = user.DistrictId,
+                    DistrictName = user.DistrictName,
+                    WardCode = user.WardCode,
+                    WardName = user.WardName,
                     Role = user.Role,
                     EmployeeCode = user.EmployeeCode,
                     HireDate = user.HireDate,
