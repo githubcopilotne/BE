@@ -116,6 +116,20 @@ public partial class ShopQuanAoContext : DbContext
             entity.Property(e => e.Address)
                 .HasMaxLength(500)
                 .HasColumnName("address");
+            entity.Property(e => e.ProvinceId).HasColumnName("province_id");
+            entity.Property(e => e.ProvinceName)
+                .HasMaxLength(100)
+                .HasColumnName("province_name");
+            entity.Property(e => e.DistrictId).HasColumnName("district_id");
+            entity.Property(e => e.DistrictName)
+                .HasMaxLength(100)
+                .HasColumnName("district_name");
+            entity.Property(e => e.WardCode)
+                .HasMaxLength(20)
+                .HasColumnName("ward_code");
+            entity.Property(e => e.WardName)
+                .HasMaxLength(100)
+                .HasColumnName("ward_name");
             entity.Property(e => e.DiscountAmount)
                 .HasDefaultValue(0m)
                 .HasColumnType("decimal(18, 2)")
@@ -293,6 +307,20 @@ public partial class ShopQuanAoContext : DbContext
             entity.Property(e => e.Address)
                 .HasMaxLength(500)
                 .HasColumnName("address");
+            entity.Property(e => e.ProvinceId).HasColumnName("province_id");
+            entity.Property(e => e.ProvinceName)
+                .HasMaxLength(100)
+                .HasColumnName("province_name");
+            entity.Property(e => e.DistrictId).HasColumnName("district_id");
+            entity.Property(e => e.DistrictName)
+                .HasMaxLength(100)
+                .HasColumnName("district_name");
+            entity.Property(e => e.WardCode)
+                .HasMaxLength(20)
+                .HasColumnName("ward_code");
+            entity.Property(e => e.WardName)
+                .HasMaxLength(100)
+                .HasColumnName("ward_name");
             entity.Property(e => e.Birthday).HasColumnName("birthday");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(getdate())")

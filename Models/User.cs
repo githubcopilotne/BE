@@ -29,6 +29,18 @@ public partial class User
 
     public string? Address { get; set; }
 
+    public int? ProvinceId { get; set; }
+
+    public string? ProvinceName { get; set; }
+
+    public int? DistrictId { get; set; }
+
+    public string? DistrictName { get; set; }
+
+    public string? WardCode { get; set; }
+
+    public string? WardName { get; set; }
+
     public string? EmployeeCode { get; set; }
 
     public string? IdCard { get; set; }
