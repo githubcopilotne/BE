@@ -15,11 +15,13 @@ namespace BE.Controllers
     public class GhnController : ControllerBase
     {
         private readonly IGhnService _ghnService;
+        private readonly IOrderService _orderService;
         private readonly ShopQuanAoContext _context;
 
-        public GhnController(IGhnService ghnService, ShopQuanAoContext context)
+        public GhnController(IGhnService ghnService, IOrderService orderService, ShopQuanAoContext context)
         {
             _ghnService = ghnService;
+            _orderService = orderService;
             _context = context;
         }
 
@@ -70,6 +72,17 @@ namespace BE.Controllers
             var result = await _ghnService.CalculateShippingFee(
                 request.DistrictId, request.WardCode, totalWeight, subtotal);
             return Ok(result);
+        }
+
+        // Webhook: GHN gọi vào khi trạng thái đơn thay đổi
+        [HttpPost("webhook")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GhnWebhook(GhnWebhookRequest request)
+        {
+            if (!string.IsNullOrEmpty(request.OrderCode))
+                await _orderService.HandleGhnWebhook(request.OrderCode, request.Status);
+
+            return Ok(); // GHN yêu cầu trả 200
         }
     }
 }

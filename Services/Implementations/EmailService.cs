@@ -236,6 +236,46 @@ namespace BE.Services.Implementations
             await SendEmail(message);
         }
 
+        public async Task SendOrderReturnedEmail(string toEmail, string fullName, int orderId, bool isOnlinePayment)
+        {
+            var emailSettings = _config.GetSection("EmailSettings");
+
+            var refundNote = isOnlinePayment
+                ? "Nhân viên sẽ liên hệ với bạn để xử lý hoàn tiền."
+                : "Nhân viên sẽ liên hệ lại với bạn trong thời gian sớm nhất.";
+
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(emailSettings["SenderName"], emailSettings["SenderEmail"]!));
+            message.To.Add(new MailboxAddress("", toEmail));
+            message.Subject = $"Thông báo hoàn hàng đơn #DH{orderId:D5} - Shop Quần Áo";
+
+            message.Body = new TextPart("html")
+            {
+                Text = $@"
+                    <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;'>
+                        <div style='background: #f59e0b; padding: 24px; text-align: center;'>
+                            <span style='font-size: 40px;'>↩️</span>
+                            <h2 style='color: #ffffff; margin: 8px 0 0;'>Đơn hàng đã bị hoàn</h2>
+                        </div>
+                        <div style='padding: 24px;'>
+                            <p style='font-size: 16px; color: #333;'>Xin chào <strong>{fullName}</strong>,</p>
+                            <p style='font-size: 16px; color: #333;'>
+                                Đơn hàng <strong style='color: #f59e0b;'>#DH{orderId:D5}</strong> của bạn đã bị hoàn do giao hàng không thành công.
+                            </p>
+                            <p style='font-size: 16px; color: #333;'>{refundNote}</p>
+                            <p style='font-size: 16px; color: #333;'>
+                                Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi qua email hoặc hotline.
+                            </p>
+                        </div>
+                        <div style='background: #f9f9f9; padding: 16px; text-align: center; border-top: 1px solid #e0e0e0;'>
+                            <p style='color: #999; font-size: 13px; margin: 0;'>Shop Quần Áo — Cảm ơn bạn đã mua sắm cùng chúng tôi!</p>
+                        </div>
+                    </div>"
+            };
+
+            await SendEmail(message);
+        }
+
         private async Task SendEmail(MimeMessage message)
         {
             var emailSettings = _config.GetSection("EmailSettings");

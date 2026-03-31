@@ -201,7 +201,7 @@ namespace BE.Services.Implementations
 
                     if (result.Success)
                     {
-                        var feeData = (dynamic)result.Data;
+                        var feeData = (dynamic)result.Data!;
                         shippingFee = (decimal)(int)feeData.shippingFee;
                     }
                 }
@@ -434,6 +434,9 @@ namespace BE.Services.Implementations
         {
             var order = await _context.Orders
                 .Include(o => o.User)
+                .Include(o => o.OrderItems)
+                    .ThenInclude(oi => oi.Variant)
+                        .ThenInclude(v => v.Product)
                 .FirstOrDefaultAsync(o => o.OrderId == orderId);
 
             if (order == null)
@@ -442,16 +445,42 @@ namespace BE.Services.Implementations
             if (order.Status != 1)
                 return ApiResponse<object>.ErrorResponse("Chỉ có thể xác nhận đơn hàng đang chờ xác nhận");
 
-            order.Status = 2; // Đã xác nhận
-            await _context.SaveChangesAsync();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Bước 1: Đổi status
+                order.Status = 2; // Đã xác nhận
+                await _context.SaveChangesAsync();
 
-            // Gửi email thông báo ngầm — không cần chờ, không block response
-            _ = _emailService.SendOrderConfirmedEmail(order.User.Email, order.FullName, orderId);
+                // Bước 2: Tạo đơn vận chuyển trên GHN
+                var ghnResult = await _ghnService.CreateShippingOrder(order);
 
-            return ApiResponse<object>.SuccessResponse(
-                new { orderId, status = 2 },
-                "Xác nhận đơn hàng thành công"
-            );
+                if (!ghnResult.Success)
+                {
+                    await transaction.RollbackAsync();
+                    return ApiResponse<object>.ErrorResponse(ghnResult.Message!);
+                }
+
+                // Bước 3: Lưu mã vận đơn GHN
+                var ghnData = (dynamic)ghnResult.Data!;
+                order.GhnOrderCode = (string)ghnData.orderCode;
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                // Gửi email thông báo ngầm
+                _ = _emailService.SendOrderConfirmedEmail(order.User.Email, order.FullName, orderId);
+
+                return ApiResponse<object>.SuccessResponse(
+                    new { orderId, status = 2, ghnOrderCode = order.GhnOrderCode },
+                    "Xác nhận đơn hàng thành công"
+                );
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return ApiResponse<object>.ErrorResponse("Lỗi khi xác nhận đơn hàng, vui lòng thử lại");
+            }
         }
 
 
@@ -663,9 +692,69 @@ namespace BE.Services.Implementations
                 status3 = counts.FirstOrDefault(c => c.Status == 3)?.Count ?? 0,
                 status4 = counts.FirstOrDefault(c => c.Status == 4)?.Count ?? 0,
                 status5 = counts.FirstOrDefault(c => c.Status == 5)?.Count ?? 0,
+                status6 = counts.FirstOrDefault(c => c.Status == 6)?.Count ?? 0,
             };
 
             return ApiResponse<object>.SuccessResponse(result, "Lấy số lượng đơn hàng thành công");
+        }
+
+        public async Task HandleGhnWebhook(string orderCode, string ghnStatus)
+        {
+            var order = await _context.Orders
+                .Include(o => o.User)
+                .FirstOrDefaultAsync(o => o.GhnOrderCode == orderCode);
+
+            if (order == null) return;
+
+            // Nhóm status GHN → status hệ thống
+            var deliveringStatuses = new[] { "picking", "picked", "storing", "transporting", "sorting", "delivering", "money_collect_picking", "money_collect_delivering" };
+            var deliveredStatuses = new[] { "delivered" };
+            var returnedStatuses = new[] { "returned" };
+
+            if (deliveringStatuses.Contains(ghnStatus) && order.Status < 3)
+            {
+                order.Status = 3; // Đang giao
+                await _context.SaveChangesAsync();
+            }
+            else if (deliveredStatuses.Contains(ghnStatus) && order.Status < 4)
+            {
+                order.Status = 4; // Đã giao
+
+                // COD → tự set đã thanh toán
+                if (order.PaymentMethod == 0)
+                    order.PaymentStatus = 1;
+
+                await _context.SaveChangesAsync();
+            }
+            else if (returnedStatuses.Contains(ghnStatus) && order.Status != 6)
+            {
+                // Hoàn hàng: đổi status + hoàn stock + voucher
+                order.Status = 6;
+
+                var orderItems = await _context.OrderItems
+                    .Where(oi => oi.OrderId == order.OrderId)
+                    .ToListAsync();
+
+                foreach (var item in orderItems)
+                {
+                    var variant = await _context.ProductVariants.FindAsync(item.VariantId);
+                    if (variant != null)
+                        variant.StockQuantity += item.Quantity;
+                }
+
+                if (order.VoucherId != null)
+                {
+                    var voucher = await _context.Vouchers.FindAsync(order.VoucherId);
+                    if (voucher != null && voucher.UsedCount > 0)
+                        voucher.UsedCount -= 1;
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Gửi email thông báo hoàn hàng
+                var isOnlinePayment = order.PaymentMethod == 1;
+                _ = _emailService.SendOrderReturnedEmail(order.User.Email, order.FullName, order.OrderId, isOnlinePayment);
+            }
         }
     }
 }

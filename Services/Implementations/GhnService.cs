@@ -1,4 +1,5 @@
 using BE.DTOs;
+using BE.Models;
 using BE.Services.Interfaces;
 using System.Text.Json;
 
@@ -131,6 +132,65 @@ namespace BE.Services.Implementations
             catch
             {
                 return ApiResponse<object>.ErrorResponse("Không thể tính phí vận chuyển");
+            }
+        }
+        // Tạo đơn vận chuyển trên GHN
+        public async Task<ApiResponse<object>> CreateShippingOrder(Order order)
+        {
+            try
+            {
+                var orderItems = order.OrderItems.ToList();
+                // Tính tổng cân nặng
+                var totalWeight = orderItems.Sum(i => i.Variant.Product.Weight * i.Quantity);
+
+                // COD: GHN thu tiền hộ = totalMoney. Online: đã thanh toán → 0
+                var codAmount = order.PaymentMethod == 0 ? (int)order.TotalMoney : 0;
+
+                var httpRequest = new HttpRequestMessage(HttpMethod.Post, $"{_apiUrl}/shipping-order/create")
+                {
+                    Content = JsonContent.Create(new
+                    {
+                        payment_type_id = 1,             // Shop trả phí ship cho GHN
+                        required_note = "CHOXEMHANGKHONGTHU", // Cho xem hàng, không cho thử
+                        to_name = order.FullName,
+                        to_phone = order.Phone,
+                        to_address = order.Address,
+                        to_ward_code = order.WardCode,
+                        to_district_id = order.DistrictId,
+                        cod_amount = codAmount,
+                        weight = totalWeight,
+                        service_type_id = 2,             // E-Commerce Delivery
+                        items = orderItems.Select(i => new
+                        {
+                            name = i.Variant.Product.ProductName,
+                            quantity = i.Quantity,
+                            price = (int)i.Price,
+                            weight = i.Variant.Product.Weight * i.Quantity
+                        }).ToList()
+                    })
+                };
+                httpRequest.Headers.Add("ShopId", _shopId);
+
+                var response = await _httpClient.SendAsync(httpRequest);
+                var json = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var message = json.GetProperty("message").GetString();
+                    return ApiResponse<object>.ErrorResponse($"GHN: {message}");
+                }
+
+                var data = json.GetProperty("data");
+                var orderCode = data.GetProperty("order_code").GetString();
+
+                return ApiResponse<object>.SuccessResponse(
+                    new { orderCode },
+                    "Tạo đơn vận chuyển thành công"
+                );
+            }
+            catch
+            {
+                return ApiResponse<object>.ErrorResponse("Không thể tạo đơn vận chuyển trên GHN");
             }
         }
     }
