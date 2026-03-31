@@ -159,6 +159,9 @@ public partial class ShopQuanAoContext : DbContext
             entity.Property(e => e.UserId).HasColumnName("user_id");
             entity.Property(e => e.VoucherId).HasColumnName("voucher_id");
             entity.Property(e => e.PaymentExpireAt).HasColumnName("payment_expire_at");
+            entity.Property(e => e.GhnOrderCode)
+                .HasMaxLength(50)
+                .HasColumnName("ghn_order_code");
 
             entity.HasOne(d => d.User).WithMany(p => p.Orders)
                 .HasForeignKey(d => d.UserId)

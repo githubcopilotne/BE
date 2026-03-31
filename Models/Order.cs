@@ -47,6 +47,8 @@ public partial class Order
 
     public DateTime? PaymentExpireAt { get; set; }
 
+    public string? GhnOrderCode { get; set; }
+
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public virtual User User { get; set; } = null!;
